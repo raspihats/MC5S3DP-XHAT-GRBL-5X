@@ -23,8 +23,9 @@
 
 void coolant_init()
 {
-  COOLANT_FLOOD_DDR |= (1 << COOLANT_FLOOD_BIT); // Configure as output pin.
-  COOLANT_MIST_DDR |= (1 << COOLANT_MIST_BIT); // Configure as output pin.
+  // Configure COOLANT FLOOD pin as output.
+  // Configure COOLANT MIST pin as output.
+  // COOLANT FLOOD and COOLANT MIST pins are initialized as outputs by STM32CubeMx
   coolant_stop();
 }
 
@@ -34,16 +35,16 @@ uint8_t coolant_get_state()
 {
   uint8_t cl_state = COOLANT_STATE_DISABLE;
   #ifdef INVERT_COOLANT_FLOOD_PIN
-    if (bit_isfalse(COOLANT_FLOOD_PORT,(1 << COOLANT_FLOOD_BIT))) {
+    if (!LL_GPIO_IsOutputPinSet(COOLANT_FLOOD_PORT, COOLANT_FLOOD_BIT)) {
   #else
-    if (bit_istrue(COOLANT_FLOOD_PORT,(1 << COOLANT_FLOOD_BIT))) {
+    if (LL_GPIO_IsOutputPinSet(COOLANT_FLOOD_PORT, COOLANT_FLOOD_BIT)) {
   #endif
     cl_state |= COOLANT_STATE_FLOOD;
   }
   #ifdef INVERT_COOLANT_MIST_PIN
-    if (bit_isfalse(COOLANT_MIST_PORT,(1 << COOLANT_MIST_BIT))) {
+    if (!LL_GPIO_IsOutputPinSet(COOLANT_MIST_PORT, COOLANT_MIST_BIT)) {
   #else
-    if (bit_istrue(COOLANT_MIST_PORT,(1 << COOLANT_MIST_BIT))) {
+    if (LL_GPIO_IsOutputPinSet(COOLANT_MIST_PORT, COOLANT_MIST_BIT)) {
   #endif
     cl_state |= COOLANT_STATE_MIST;
   }
@@ -56,14 +57,14 @@ uint8_t coolant_get_state()
 void coolant_stop()
 {
   #ifdef INVERT_COOLANT_FLOOD_PIN
-    COOLANT_FLOOD_PORT |= (1 << COOLANT_FLOOD_BIT);
+    LL_GPIO_SetOutputPin(COOLANT_FLOOD_PORT, COOLANT_FLOOD_BIT);
   #else
-    COOLANT_FLOOD_PORT &= ~(1 << COOLANT_FLOOD_BIT);
+    LL_GPIO_ResetOutputPin(COOLANT_FLOOD_PORT, COOLANT_FLOOD_BIT);
   #endif
   #ifdef INVERT_COOLANT_MIST_PIN
-    COOLANT_MIST_PORT |= (1 << COOLANT_MIST_BIT);
+    LL_GPIO_SetOutputPin(COOLANT_MIST_PORT, COOLANT_MIST_BIT);
   #else
-    COOLANT_MIST_PORT &= ~(1 << COOLANT_MIST_BIT);
+    LL_GPIO_ResetOutputPin(COOLANT_MIST_PORT, COOLANT_MIST_BIT);
   #endif
 }
 
@@ -77,24 +78,24 @@ void coolant_set_state(uint8_t mode)
   if (sys.abort) { return; } // Block during abort.  
   
   if (mode == COOLANT_DISABLE) {
-  
+
     coolant_stop(); 
-  
+
   } else {
   
     if (mode & COOLANT_FLOOD_ENABLE) {
       #ifdef INVERT_COOLANT_FLOOD_PIN
-        COOLANT_FLOOD_PORT &= ~(1 << COOLANT_FLOOD_BIT);
+        LL_GPIO_ResetOutputPin(COOLANT_FLOOD_PORT, COOLANT_FLOOD_BIT);
       #else
-        COOLANT_FLOOD_PORT |= (1 << COOLANT_FLOOD_BIT);
+        LL_GPIO_SetOutputPin(COOLANT_FLOOD_PORT, COOLANT_FLOOD_BIT);
       #endif
     }
   
     if (mode & COOLANT_MIST_ENABLE) {
       #ifdef INVERT_COOLANT_MIST_PIN
-        COOLANT_MIST_PORT &= ~(1 << COOLANT_MIST_BIT);
+        LL_GPIO_ResetOutputPin(COOLANT_MIST_PORT, COOLANT_MIST_BIT);
       #else
-        COOLANT_MIST_PORT |= (1 << COOLANT_MIST_BIT);
+        LL_GPIO_SetOutputPin(COOLANT_MIST_PORT, COOLANT_MIST_BIT);
       #endif
     }
   

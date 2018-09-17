@@ -39,7 +39,6 @@
 //#define DEFAULTS_GENERIC
 //#define CPU_MAP_2560_INITIAL
 
-// To use with RAMPS 1.4 Board, comment out the above defines and uncomment the next two defines
 #define DEFAULTS_RAMPS_BOARD
 #define CPU_MAP_2560_RAMPS_BOARD
 

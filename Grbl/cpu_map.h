@@ -26,112 +26,9 @@
 #ifndef cpu_map_h
 #define cpu_map_h
 
+#include "main.h"
 
-#ifdef CPU_MAP_2560_INITIAL // (Arduino Mega 2560) Working @EliteEng
 
-  // Serial port interrupt vectors
-  #define SERIAL_RX USART0_RX_vect
-  #define SERIAL_UDRE USART0_UDRE_vect
-
-  // Define step pulse output pins. NOTE: All step bit pins must be on the same port.
-  #define STEP_DDR      DDRA
-  #define STEP_PORT     PORTA
-  #define STEP_PIN      PINA
-  #define X_STEP_BIT    2 // MEGA2560 Digital Pin 24
-  #define Y_STEP_BIT    3 // MEGA2560 Digital Pin 25
-  #define Z_STEP_BIT    4 // MEGA2560 Digital Pin 26
-  #define STEP_MASK ((1<<X_STEP_BIT)|(1<<Y_STEP_BIT)|(1<<Z_STEP_BIT)) // All step bits
-
-  // Define step direction output pins. NOTE: All direction pins must be on the same port.
-  #define DIRECTION_DDR     DDRC
-  #define DIRECTION_PORT    PORTC
-  #define DIRECTION_PIN     PINC
-  #define X_DIRECTION_BIT   7 // MEGA2560 Digital Pin 30
-  #define Y_DIRECTION_BIT   6 // MEGA2560 Digital Pin 31
-  #define Z_DIRECTION_BIT   5 // MEGA2560 Digital Pin 32
-  #define DIRECTION_MASK ((1<<X_DIRECTION_BIT)|(1<<Y_DIRECTION_BIT)|(1<<Z_DIRECTION_BIT)) // All direction bits
-
-  // Define stepper driver enable/disable output pin.
-  #define STEPPERS_DISABLE_DDR   DDRB
-  #define STEPPERS_DISABLE_PORT  PORTB
-  #define STEPPERS_DISABLE_BIT   7 // MEGA2560 Digital Pin 13
-  #define STEPPERS_DISABLE_MASK (1<<STEPPERS_DISABLE_BIT)
-
-  // Define homing/hard limit switch input pins and limit interrupt vectors.
-  // NOTE: All limit bit pins must be on the same port
-  #define LIMIT_DDR       DDRB
-  #define LIMIT_PORT      PORTB
-  #define LIMIT_PIN       PINB
-  #define X_LIMIT_BIT     4 // MEGA2560 Digital Pin 10
-  #define Y_LIMIT_BIT     5 // MEGA2560 Digital Pin 11
-  #define Z_LIMIT_BIT     6 // MEGA2560 Digital Pin 12
-  #define LIMIT_INT       PCIE0  // Pin change interrupt enable pin
-  #define LIMIT_INT_vect  PCINT0_vect
-  #define LIMIT_PCMSK     PCMSK0 // Pin change interrupt register
-  #define LIMIT_MASK ((1<<X_LIMIT_BIT)|(1<<Y_LIMIT_BIT)|(1<<Z_LIMIT_BIT)) // All limit bits
-
-  // Define spindle enable and spindle direction output pins.
-  #define SPINDLE_ENABLE_DDR      DDRH
-  #define SPINDLE_ENABLE_PORT     PORTH
-  #define SPINDLE_ENABLE_BIT      3 // MEGA2560 Digital Pin 6
-  #define SPINDLE_DIRECTION_DDR   DDRE
-  #define SPINDLE_DIRECTION_PORT  PORTE
-  #define SPINDLE_DIRECTION_BIT   3 // MEGA2560 Digital Pin 5
-
-  // Define flood and mist coolant enable output pins.
-  #define COOLANT_FLOOD_DDR   DDRH
-  #define COOLANT_FLOOD_PORT  PORTH
-  #define COOLANT_FLOOD_BIT   5 // MEGA2560 Digital Pin 8
-  #define COOLANT_MIST_DDR    DDRH
-  #define COOLANT_MIST_PORT   PORTH
-  #define COOLANT_MIST_BIT    6 // MEGA2560 Digital Pin 9
-
-  // Define user-control CONTROLs (cycle start, reset, feed hold) input pins.
-  // NOTE: All CONTROLs pins must be on the same port and not on a port with other input pins (limits).
-  #define CONTROL_DDR       DDRK
-  #define CONTROL_PIN       PINK
-  #define CONTROL_PORT      PORTK
-  #define CONTROL_RESET_BIT         0  // MEGA2560 Analog Pin 8
-  #define CONTROL_FEED_HOLD_BIT     1  // MEGA2560 Analog Pin 9
-  #define CONTROL_CYCLE_START_BIT   2  // MEGA2560 Analog Pin 10
-  #define CONTROL_SAFETY_DOOR_BIT   3  // MEGA2560 Analog Pin 11
-  #define CONTROL_INT       PCIE2  // Pin change interrupt enable pin
-  #define CONTROL_INT_vect  PCINT2_vect
-  #define CONTROL_PCMSK     PCMSK2 // Pin change interrupt register
-  #define CONTROL_MASK      ((1<<CONTROL_RESET_BIT)|(1<<CONTROL_FEED_HOLD_BIT)|(1<<CONTROL_CYCLE_START_BIT)|(1<<CONTROL_SAFETY_DOOR_BIT))
-
-  // Define probe switch input pin.
-  #define PROBE_DDR       DDRK
-  #define PROBE_PIN       PINK
-  #define PROBE_PORT      PORTK
-  #define PROBE_BIT       7  // MEGA2560 Analog Pin 15
-  #define PROBE_MASK      (1<<PROBE_BIT)
-
-  // Advanced Configuration Below You should not need to touch these variables
-  // Set Timer up to use TIMER4B which is attached to Digital Pin 7
-  #define SPINDLE_PWM_MAX_VALUE     1024.0 // Translates to about 1.9 kHz PWM frequency at 1/8 prescaler
-  #ifndef SPINDLE_PWM_MIN_VALUE
-    #define SPINDLE_PWM_MIN_VALUE   1   // Must be greater than zero.
-  #endif
-  #define SPINDLE_PWM_OFF_VALUE     0
-  #define SPINDLE_PWM_RANGE         (SPINDLE_PWM_MAX_VALUE-SPINDLE_PWM_MIN_VALUE)
-  #define SPINDLE_TCCRA_REGISTER    TCCR4A
-  #define SPINDLE_TCCRB_REGISTER    TCCR4B
-  #define SPINDLE_OCR_REGISTER      OCR4B
-  #define SPINDLE_COMB_BIT          COM4B1
-
-  // 1/8 Prescaler, 16-bit Fast PWM mode
-  #define SPINDLE_TCCRA_INIT_MASK ((1<<WGM40) | (1<<WGM41))
-  #define SPINDLE_TCCRB_INIT_MASK ((1<<WGM42) | (1<<WGM43) | (1<<CS41))
-  #define SPINDLE_OCRA_REGISTER   OCR4A // 16-bit Fast PWM mode requires top reset value stored here.
-  #define SPINDLE_OCRA_TOP_VALUE  0x0400 // PWM counter reset value. Should be the same as PWM_MAX_VALUE in hex.
-
-  // Define spindle output pins.
-  #define SPINDLE_PWM_DDR   DDRH
-  #define SPINDLE_PWM_PORT  PORTH
-  #define SPINDLE_PWM_BIT   4 // MEGA2560 Digital Pin 7
-
-#endif
 
 #ifdef CPU_MAP_2560_RAMPS_BOARD // (Arduino Mega 2560) with Ramps 1.4 Board
   #include "nuts_bolts.h"
@@ -139,14 +36,6 @@
   // Serial port interrupt vectors
   #define SERIAL_RX USART0_RX_vect
   #define SERIAL_UDRE USART0_UDRE_vect
-
-  // Define ports and pins
-  #define DDR(port) DDR##port
-  #define _DDR(port) DDR(port)
-  #define PORT(port) PORT##port
-  #define _PORT(port) PORT(port)
-  #define PIN(pin) PIN##pin
-  #define _PIN(pin) PIN(pin)
 
   // Define step pulse output pins.
 
@@ -243,72 +132,87 @@
   #define STEPPER_DISABLE_PORT(i) _PORT(STEPPER_DISABLE_PORT_##i)
   #define STEPPER_DISABLE_PIN(i) _PIN(STEPPER_DISABLE_PORT_##i)
 
-  // Define homing/hard limit switch input pins and limit interrupt vectors.
-  #define MIN_LIMIT_PORT_0 E
-  #define MIN_LIMIT_PORT_1 J
-  #define MIN_LIMIT_PORT_2 D
-  #if N_AXIS > 3
-    #define MIN_LIMIT_PORT_3 L
-  #endif
-  #if N_AXIS > 4
-    #define MIN_LIMIT_PORT_4 L
-  #endif
-  #if N_AXIS > 5
-    #define MIN_LIMIT_PORT_5 F // (Ramps Aux-1 D57)
-  #endif
-  #define MIN_LIMIT_BIT_0 5 // X Limit Min - Pin D3
-  #define MIN_LIMIT_BIT_1 1 // Y Limit Min - Pin D14
-  #define MIN_LIMIT_BIT_2 3 // Z Limit Min - Pin D18
-  #if N_AXIS > 3
-    #define MIN_LIMIT_BIT_3 7 // Axis number 4 : RAMPS AUX2 pin D42
-  #endif
-  #if N_AXIS > 4
-    #define MIN_LIMIT_BIT_4 5 // Axis number 5 : RAMPS AUX2 pin D44
-  #endif
-  #if N_AXIS > 5
-    #define MIN_LIMIT_BIT_5 3 // Axis number 6 : RAMPS AUX2 pin D57
-  #endif
-  #define _MIN_LIMIT_BIT(i) MIN_LIMIT_BIT_##i
-  #define MIN_LIMIT_BIT(i) _MIN_LIMIT_BIT(i)
-  #define MIN_LIMIT_DDR(i) _DDR(MIN_LIMIT_PORT_##i)
-  #define MIN_LIMIT_PORT(i) _PORT(MIN_LIMIT_PORT_##i)
-  #define MIN_LIMIT_PIN(i) _PIN(MIN_LIMIT_PORT_##i)
 
-  #define MAX_LIMIT_PORT_0 E
-  #define MAX_LIMIT_PORT_1 J
-  #define MAX_LIMIT_PORT_2 D
+  /************************************************************
+   * *********************** LIMITS ***************************
+   ************************************************************/
+  // Switch inputs pins used for homing/hard limit.
+
+  // Min Limits Ports
+  #define MIN_LIMIT_PORT_0        X_MIN_GPIO_Port
+  #define MIN_LIMIT_PORT_1        Y_MIN_GPIO_Port
+  #define MIN_LIMIT_PORT_2        Z_MIN_GPIO_Port
   #if N_AXIS > 3
-    #define MAX_LIMIT_PORT_3 G
+    #define MIN_LIMIT_PORT_3      A_MIN_GPIO_Port
   #endif
   #if N_AXIS > 4
-    #define MAX_LIMIT_PORT_4 F
+    #define MIN_LIMIT_PORT_4      B_MIN_GPIO_Port
   #endif
-  #if N_AXIS > 5
-    #define MAX_LIMIT_PORT_5 F // (Ramps Aux-3 D58)
-  #endif
-  #define MAX_LIMIT_BIT_0 4 // X Limit Max - Pin D2
-  #define MAX_LIMIT_BIT_1 0 // Y Limit Max - Pin D15
-  #define MAX_LIMIT_BIT_2 2 // Z Limit Max - Pin D19
+
+  // Min Limits Pins
+  #define MIN_LIMIT_BIT_0         X_MIN_Pin // X Limit Min pin
+  #define MIN_LIMIT_BIT_1         Y_MIN_Pin // Y Limit Min pin
+  #define MIN_LIMIT_BIT_2         Z_MIN_Pin // Z Limit Min pin
   #if N_AXIS > 3
-    #define MAX_LIMIT_BIT_3 1 // Axis number 4 : RAMPS AUX2 pin D40
+    #define MIN_LIMIT_BIT_3       A_MIN_Pin // Axis number 4
   #endif
   #if N_AXIS > 4
-    #define MAX_LIMIT_BIT_4 5 // Axis number 5 : RAMPS AUX2 pin D59
+    #define MIN_LIMIT_BIT_4       B_MIN_Pin // Axis number 5
   #endif
-  #if N_AXIS > 5
-    #define MAX_LIMIT_BIT_5 4 // Axis number 6 : RAMPS AUX2 pin D58
+
+  // Max Limits Ports
+  #define MAX_LIMIT_PORT_0        X_MAX_GPIO_Port
+  #define MAX_LIMIT_PORT_1        Y_MAX_GPIO_Port
+  #define MAX_LIMIT_PORT_2        Z_MAX_GPIO_Port
+  #if N_AXIS > 3
+    #define MAX_LIMIT_PORT_3      A_MAX_GPIO_Port
   #endif
-  #define _MAX_LIMIT_BIT(i) MAX_LIMIT_BIT_##i
-  #define MAX_LIMIT_BIT(i) _MAX_LIMIT_BIT(i)
-  #define MAX_LIMIT_DDR(i) _DDR(MAX_LIMIT_PORT_##i)
-  #define MAX_LIMIT_PORT(i) _PORT(MAX_LIMIT_PORT_##i)
-  #define MAX_LIMIT_PIN(i) _PIN(MAX_LIMIT_PORT_##i)
+  #if N_AXIS > 4
+    #define MAX_LIMIT_PORT_4      B_MAX_GPIO_Port
+  #endif
+
+  // Max Limits pins
+  #define MAX_LIMIT_BIT_0         X_MAX_Pin // X Limit Max
+  #define MAX_LIMIT_BIT_1         Y_MAX_Pin // Y Limit Max
+  #define MAX_LIMIT_BIT_2         Z_MAX_Pin // Z Limit Max
+  #if N_AXIS > 3
+    #define MAX_LIMIT_BIT_3       A_MAX_Pin // Axis number 4
+  #endif
+  #if N_AXIS > 4
+    #define MAX_LIMIT_BIT_4       B_MAX_Pin // Axis number 5
+  #endif
+
 
   //  #define LIMIT_INT       PCIE0  // Pin change interrupt enable pin
   //  #define LIMIT_INT_vect  PCINT0_vect
   //  #define LIMIT_PCMSK     PCMSK0 // Pin change interrupt register
   //  #define LIMIT_MASK ((1<<X_LIMIT_BIT)|(1<<Y_LIMIT_BIT)|(1<<Z_LIMIT_BIT)) // All limit bits
   #define DISABLE_HW_LIMITS
+
+
+  /************************************************************
+   * ******************* USER CONTROLS ************************
+   ************************************************************/
+  // Cycle start, reset, feed hold input pins.
+  #define CONTROL_RESET_BIT         DI_0_Pin
+  #define CONTROL_FEED_HOLD_BIT     DI_1_Pin
+  #define CONTROL_CYCLE_START_BIT   DI_2_Pin
+  #define CONTROL_SAFETY_DOOR_BIT   DI_3_Pin
+  #define CONTROL_INT       PCIE2  // Pin change interrupt enable pin
+  #define CONTROL_INT_vect  PCINT2_vect
+  #define CONTROL_PCMSK     PCMSK2 // Pin change interrupt register
+  #define CONTROL_MASK      ((1<<CONTROL_RESET_BIT)|(1<<CONTROL_FEED_HOLD_BIT)|(1<<CONTROL_CYCLE_START_BIT)|(1<<CONTROL_SAFETY_DOOR_BIT))
+
+  // Define probe switch input pin.
+  #define PROBE_PORT      DI_4_GPIO_Port
+  #define PROBE_BIT       DI_4_Pin
+
+
+  // Define flood and mist coolant enable output pins.
+  #define COOLANT_FLOOD_PORT  DQ_0_GPIO_Port
+  #define COOLANT_FLOOD_BIT   DQ_0_Pin
+  #define COOLANT_MIST_PORT   DQ_1_GPIO_Port
+  #define COOLANT_MIST_BIT    DQ_1_Pin
 
   // Define spindle enable and spindle direction output pins.
   #define SPINDLE_ENABLE_DDR      DDRG
@@ -318,34 +222,6 @@
   #define SPINDLE_DIRECTION_PORT  PORTE
   #define SPINDLE_DIRECTION_BIT   3 // MEGA2560 Digital Pin 5 - Ramps 1.4 Servo 3 Signal pin (D5)
 
-  // Define flood and mist coolant enable output pins.
-  #define COOLANT_FLOOD_DDR   DDRB
-  #define COOLANT_FLOOD_PORT  PORTB
-  #define COOLANT_FLOOD_BIT   4 // MEGA2560 Digital Pin 10 - Ramps 1.4 12v output
-  #define COOLANT_MIST_DDR    DDRH
-  #define COOLANT_MIST_PORT   PORTH
-  #define COOLANT_MIST_BIT    6 // MEGA2560 Digital Pin 9 - Ramps 1.4 12v output
-
-  // Define user-control CONTROLs (cycle start, reset, feed hold) input pins.
-  // NOTE: All CONTROLs pins must be on the same port and not on a port with other input pins (limits).
-  #define CONTROL_DDR       DDRK
-  #define CONTROL_PIN       PINK
-  #define CONTROL_PORT      PORTK
-  #define CONTROL_RESET_BIT         1  // Pin A9 - RAMPS Aux 2 Port
-  #define CONTROL_FEED_HOLD_BIT     2  // Pin A10 - RAMPS Aux 2 Port
-  #define CONTROL_CYCLE_START_BIT   3  // Pin A11 - RAMPS Aux 2 Port
-  #define CONTROL_SAFETY_DOOR_BIT   4  // Pin A12 - RAMPS Aux 2 Port
-  #define CONTROL_INT       PCIE2  // Pin change interrupt enable pin
-  #define CONTROL_INT_vect  PCINT2_vect
-  #define CONTROL_PCMSK     PCMSK2 // Pin change interrupt register
-  #define CONTROL_MASK      ((1<<CONTROL_RESET_BIT)|(1<<CONTROL_FEED_HOLD_BIT)|(1<<CONTROL_CYCLE_START_BIT)|(1<<CONTROL_SAFETY_DOOR_BIT))
-
-  // Define probe switch input pin.
-  #define PROBE_DDR       DDRK
-  #define PROBE_PIN       PINK
-  #define PROBE_PORT      PORTK
-  #define PROBE_BIT       7  // MEGA2560 Analog Pin 15
-  #define PROBE_MASK      (1<<PROBE_BIT)
 
   // Advanced Configuration Below You should not need to touch these variables
   // Set Timer up to use TIMER4B which is attached to Digital Pin 8 - Ramps 1.4 12v output with heat sink

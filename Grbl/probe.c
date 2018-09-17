@@ -28,11 +28,14 @@ uint8_t probe_invert_mask;
 // Probe pin initialization routine.
 void probe_init()
 {
-  PROBE_DDR &= ~(PROBE_MASK); // Configure as input pins
+  // Configure PROBE pin as input
+  // PROBE pin is initialized as input by STM32CubeMx
+
   #ifdef DISABLE_PROBE_PIN_PULL_UP
-    PROBE_PORT &= ~(PROBE_MASK); // Normal low operation. Requires external pull-down.
+    LL_GPIO_SetPinPull(PROBE_PORT, PROBE_BIT, LL_GPIO_PULL_NO);
   #else
-    PROBE_PORT |= PROBE_MASK;    // Enable internal pull-up resistors. Normal high operation.
+    // Enable internal pull-up resistors.
+    LL_GPIO_SetPinPull(PROBE_PORT, PROBE_BIT, LL_GPIO_PULL_UP);
   #endif
   probe_configure_invert_mask(false); // Initialize invert mask.
 }
@@ -44,13 +47,16 @@ void probe_init()
 void probe_configure_invert_mask(uint8_t is_probe_away)
 {
   probe_invert_mask = 0; // Initialize as zero.
-  if (bit_isfalse(settings.flags,BITFLAG_INVERT_PROBE_PIN)) { probe_invert_mask ^= PROBE_MASK; }
-  if (is_probe_away) { probe_invert_mask ^= PROBE_MASK; }
+  if (bit_isfalse(settings.flags, BITFLAG_INVERT_PROBE_PIN)) { probe_invert_mask ^= 1; }
+  if (is_probe_away) { probe_invert_mask ^= 1; }
 }
 
 
 // Returns the probe pin state. Triggered = true. Called by gcode parser and probe state monitor.
-uint8_t probe_get_state() { return((PROBE_PIN & PROBE_MASK) ^ probe_invert_mask); }
+uint8_t probe_get_state()
+{
+  return LL_GPIO_IsInputPinSet(PROBE_PORT, PROBE_BIT) ^ probe_invert_mask;
+}
 
 
 // Monitors probe pin state and records the system position when detected. Called by the
