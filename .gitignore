@@ -4,4 +4,10 @@
 *.DS_Store
 *.d
 
-README.md
+.cproject
+.mxproject
+.project
+.settings/
+/Debug/
+
+
