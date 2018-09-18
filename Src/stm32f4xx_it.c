@@ -33,8 +33,10 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx.h"
 #include "stm32f4xx_it.h"
+#include "serial.h"
 
 /* USER CODE BEGIN 0 */
+uint32_t millisec_counter;
 
 /* USER CODE END 0 */
 
@@ -174,7 +176,9 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
-
+  if(millisec_counter > 0) {
+    millisec_counter--;
+  }
   /* USER CODE END SysTick_IRQn 0 */
   
   /* USER CODE BEGIN SysTick_IRQn 1 */
@@ -196,38 +200,19 @@ void USART1_IRQHandler(void)
 {
   /* USER CODE BEGIN USART1_IRQn 0 */
 
+  if(LL_USART_IsActiveFlag_RXNE(USART1)) {
+    LL_USART_ClearFlag_RXNE(USART1);
+    ISR_SERIAL_RXNE();
+  }
+
+  if(LL_USART_IsActiveFlag_TXE(USART1)) {
+    ISR_SERIAL_TXE();
+  }
+
   /* USER CODE END USART1_IRQn 0 */
   /* USER CODE BEGIN USART1_IRQn 1 */
 
   /* USER CODE END USART1_IRQn 1 */
-}
-
-/**
-* @brief This function handles DMA2 stream2 global interrupt.
-*/
-void DMA2_Stream2_IRQHandler(void)
-{
-  /* USER CODE BEGIN DMA2_Stream2_IRQn 0 */
-
-  /* USER CODE END DMA2_Stream2_IRQn 0 */
-  
-  /* USER CODE BEGIN DMA2_Stream2_IRQn 1 */
-
-  /* USER CODE END DMA2_Stream2_IRQn 1 */
-}
-
-/**
-* @brief This function handles DMA2 stream7 global interrupt.
-*/
-void DMA2_Stream7_IRQHandler(void)
-{
-  /* USER CODE BEGIN DMA2_Stream7_IRQn 0 */
-
-  /* USER CODE END DMA2_Stream7_IRQn 0 */
-  
-  /* USER CODE BEGIN DMA2_Stream7_IRQn 1 */
-
-  /* USER CODE END DMA2_Stream7_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

@@ -29,15 +29,6 @@ void printString(const char *s)
 }
 
 
-// Print a string stored in PGM-memory
-void printPgmString(const char *s)
-{
-  char c;
-  while ((c = pgm_read_byte_near(s++)))
-    serial_write(c);
-}
-
-
 // void printIntegerInBase(unsigned long n, unsigned long base)
 // {
 // 	unsigned char buf[8 * sizeof(long)]; // Assumes 8-bit chars.

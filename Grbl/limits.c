@@ -271,21 +271,6 @@ uint8_t limits_get_state()
   #endif
 #endif // DEFAULTS_RAMPS_BOARD
 
-#ifdef DEFAULTS_RAMPS_BOARD
-  static uint8_t axislock_active(uint8_t *axislock)
-  {
-    uint8_t res = 0;
-    uint8_t idx;
-
-    for (idx = 0; idx < N_AXIS; idx++)
-      if (axislock[idx]) {
-        res = 1;
-        break;
-      }
-
-    return res;
-  }
-#endif // DEFAULTS_RAMPS_BOARD
 
 
 // Homes the specified cycle axes, sets the machine position, and performs a pull-off motion after
@@ -328,251 +313,132 @@ void limits_go_home(uint8_t cycle_mask)
   // Set search mode with approach at seek rate to quickly engage the specified cycle_mask limit switches.
   bool approach = true;
   float homing_rate = settings.homing_seek_rate;
-  #ifdef DEFAULTS_RAMPS_BOARD
-    uint8_t limit_state, n_active_axis;
-    uint8_t axislock[N_AXIS];
-    do {
 
-      system_convert_array_steps_to_mpos(target,sys_position);
+  uint8_t limit_state, axislock, n_active_axis;
+  do {
 
-      // Initialize and declare variables needed for homing routine.
-      n_active_axis = 0;
-      for (idx=0; idx<N_AXIS; idx++) {
-        axislock[idx]=0;
-        // Set target location for active axes and setup computation for homing rate.
-        if (bit_istrue(cycle_mask,bit(idx))) {
-          n_active_axis++;
-          #ifdef COREXY
-            if (idx == AXIS_1) {
-              int32_t axis_position = system_convert_corexy_to_y_axis_steps(sys_position);
-              sys_position[A_MOTOR] = axis_position;
-              sys_position[B_MOTOR] = -axis_position;
-            } else if (idx == AXIS_2) {
-              int32_t axis_position = system_convert_corexy_to_x_axis_steps(sys_position);
-              sys_position[A_MOTOR] = sys_position[B_MOTOR] = axis_position;
-            } else {
-              sys_position[AXIS_3] = 0;
-            }
-          #else
+    system_convert_array_steps_to_mpos(target,sys_position);
+
+    // Initialize and declare variables needed for homing routine.
+    axislock = 0;
+    n_active_axis = 0;
+    for (idx=0; idx<N_AXIS; idx++) {
+      // Set target location for active axes and setup computation for homing rate.
+      if (bit_istrue(cycle_mask,bit(idx))) {
+        n_active_axis++;
+        #ifdef COREXY
+          if (idx == AXIS_1) {
+            int32_t axis_position = system_convert_corexy_to_y_axis_steps(sys_position);
+            sys_position[A_MOTOR] = axis_position;
+            sys_position[B_MOTOR] = -axis_position;
+          } else if (idx == AXIS_2) {
+            int32_t axis_position = system_convert_corexy_to_x_axis_steps(sys_position);
+            sys_position[A_MOTOR] = sys_position[B_MOTOR] = axis_position;
+          } else {
+          #if N_AXIS > 3
             sys_position[idx] = 0;
-          #endif
-          // Set target direction based on cycle mask and homing cycle approach state.
-          // NOTE: This happens to compile smaller than any other implementation tried.
-          if (bit_istrue(settings.homing_dir_mask,bit(idx))) {
-            if (approach) { target[idx] = -max_travel; }
-            else { target[idx] = max_travel; }
-          } else {
-            if (approach) { target[idx] = max_travel; }
-            else { target[idx] = -max_travel; }
-          }
-          // Apply axislock to the step port pins active in this cycle.
-          axislock[idx] = step_pin[idx];
-          sys.homing_axis_lock[idx] = axislock[idx];
-        }
-
-      }
-      homing_rate *= sqrt(n_active_axis); // [sqrt(N_AXIS)] Adjust so individual axes all move at homing rate.
-
-
-      // Perform homing cycle. Planner buffer should be empty, as required to initiate the homing cycle.
-      pl_data->feed_rate = homing_rate; // Set current homing rate.
-      plan_buffer_line(target, pl_data); // Bypass mc_line(). Directly plan homing motion.
-
-      sys.step_control = STEP_CONTROL_EXECUTE_SYS_MOTION; // Set to execute homing motion and clear existing flags.
-      st_prep_buffer(); // Prep and fill segment buffer from newly planned block.
-      st_wake_up(); // Initiate motion
-      do {
-        if (approach) {
-          // Check limit state. Lock out cycle axes when they change.
-          limit_state = limits_get_state();
-          for (idx=0; idx<N_AXIS; idx++) {
-            if (axislock[idx] & step_pin[idx]) {
-              if (limit_state & (1 << idx)) {
-                #ifdef COREXY
-                  if (idx==AXIS_3) { axislock[idx] &= ~(step_pin[AXIS_3]); }
-                  #if N_AXIS > 3
-                    else if (idx==AXIS_4) { axislock[idx] &= ~(step_pin[AXIS_4]); }
-                  #endif
-                  #if N_AXIS > 4
-                    else if (idx==AXIS_5) { axislock[idx] &= ~(step_pin[AXIS_5]); }
-                  #endif
-                  #if N_AXIS > 5
-                    else if (idx==AXIS_6) { axislock[idx] &= ~(step_pin[AXIS_6]); }
-                  #endif
-                  else { axislock[idx] &= ~(step_pin[A_MOTOR]|step_pin[B_MOTOR]); }
-                #else
-                  axislock[idx] &= ~(step_pin[idx]);
-                #endif
-              }
-            }
-            sys.homing_axis_lock[idx] = axislock[idx];
-          }
-        }
-
-        st_prep_buffer(); // Check and prep segment buffer. NOTE: Should take no longer than 200us.
-
-        // Exit routines: No time to run protocol_execute_realtime() in this loop.
-        if (sys_rt_exec_state & (EXEC_SAFETY_DOOR | EXEC_RESET | EXEC_CYCLE_STOP)) {
-          uint8_t rt_exec = sys_rt_exec_state;
-          // Homing failure condition: Reset issued during cycle.
-          if (rt_exec & EXEC_RESET) { system_set_exec_alarm(EXEC_ALARM_HOMING_FAIL_RESET); }
-          // Homing failure condition: Safety door was opened.
-          if (rt_exec & EXEC_SAFETY_DOOR) { system_set_exec_alarm(EXEC_ALARM_HOMING_FAIL_DOOR); }
-          // Homing failure condition: Limit switch still engaged after pull-off motion
-          if (!approach && (limits_get_state() & cycle_mask)) { system_set_exec_alarm(EXEC_ALARM_HOMING_FAIL_PULLOFF); }
-          // Homing failure condition: Limit switch not found during approach.
-          if (approach && (rt_exec & EXEC_CYCLE_STOP)) { system_set_exec_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH); }
-          if (sys_rt_exec_alarm) {
-            mc_reset(); // Stop motors, if they are running.
-            protocol_execute_realtime();
-            return;
-          } else {
-            // Pull-off motion complete. Disable CYCLE_STOP from executing.
-            system_clear_exec_state_flag(EXEC_CYCLE_STOP);
-            break;
-          }
-        }
-
-      } while (axislock_active(axislock));
-      st_reset(); // Immediately force kill steppers and reset step segment buffer.
-      delay_ms(settings.homing_debounce_delay); // Delay to allow transient dynamics to dissipate.
-
-      // Reverse direction and reset homing rate for locate cycle(s).
-      approach = !approach;
-
-      // After first cycle, homing enters locating phase. Shorten search to pull-off distance.
-      if (approach) {
-        max_travel = settings.homing_pulloff*HOMING_AXIS_LOCATE_SCALAR;
-        homing_rate = settings.homing_feed_rate;
-      } else {
-        max_travel = settings.homing_pulloff;
-        homing_rate = settings.homing_seek_rate;
-      }
-    } while (n_cycle-- > 0);
-  #else
-    uint8_t limit_state, axislock, n_active_axis;
-    do {
-
-      system_convert_array_steps_to_mpos(target,sys_position);
-
-      // Initialize and declare variables needed for homing routine.
-      axislock = 0;
-      n_active_axis = 0;
-      for (idx=0; idx<N_AXIS; idx++) {
-        // Set target location for active axes and setup computation for homing rate.
-        if (bit_istrue(cycle_mask,bit(idx))) {
-          n_active_axis++;
-          #ifdef COREXY
-            if (idx == AXIS_1) {
-              int32_t axis_position = system_convert_corexy_to_y_axis_steps(sys_position);
-              sys_position[A_MOTOR] = axis_position;
-              sys_position[B_MOTOR] = -axis_position;
-            } else if (idx == AXIS_2) {
-              int32_t axis_position = system_convert_corexy_to_x_axis_steps(sys_position);
-              sys_position[A_MOTOR] = sys_position[B_MOTOR] = axis_position;
-            } else {
-            #if N_AXIS > 3
-              sys_position[idx] = 0;
-            #else
-              sys_position[AXIS_3] = 0;
-            #endif
-            }
           #else
-            sys_position[idx] = 0;
+            sys_position[AXIS_3] = 0;
           #endif
-          // Set target direction based on cycle mask and homing cycle approach state.
-          // NOTE: This happens to compile smaller than any other implementation tried.
-          if (bit_istrue(settings.homing_dir_mask,bit(idx))) {
-            if (approach) { target[idx] = -max_travel; }
-            else { target[idx] = max_travel; }
-          } else {
-            if (approach) { target[idx] = max_travel; }
-            else { target[idx] = -max_travel; }
           }
-          // Apply axislock to the step port pins active in this cycle.
-          axislock |= step_pin[idx];
+        #else
+          sys_position[idx] = 0;
+        #endif
+        // Set target direction based on cycle mask and homing cycle approach state.
+        // NOTE: This happens to compile smaller than any other implementation tried.
+        if (bit_istrue(settings.homing_dir_mask,bit(idx))) {
+          if (approach) { target[idx] = -max_travel; }
+          else { target[idx] = max_travel; }
+        } else {
+          if (approach) { target[idx] = max_travel; }
+          else { target[idx] = -max_travel; }
         }
-
+        // Apply axislock to the step port pins active in this cycle.
+        axislock |= step_pin[idx];
       }
-      homing_rate *= sqrt(n_active_axis); // [sqrt(N_AXIS)] Adjust so individual axes all move at homing rate.
-      sys.homing_axis_lock = axislock;
 
-      // Perform homing cycle. Planner buffer should be empty, as required to initiate the homing cycle.
-      pl_data->feed_rate = homing_rate; // Set current homing rate.
-      plan_buffer_line(target, pl_data); // Bypass mc_line(). Directly plan homing motion.
+    }
+    homing_rate *= sqrt(n_active_axis); // [sqrt(N_AXIS)] Adjust so individual axes all move at homing rate.
+    sys.homing_axis_lock = axislock;
 
-      sys.step_control = STEP_CONTROL_EXECUTE_SYS_MOTION; // Set to execute homing motion and clear existing flags.
-      st_prep_buffer(); // Prep and fill segment buffer from newly planned block.
-      st_wake_up(); // Initiate motion
-      do {
-        if (approach) {
-          // Check limit state. Lock out cycle axes when they change.
-          limit_state = limits_get_state();
-          for (idx=0; idx<N_AXIS; idx++) {
-            if (axislock & step_pin[idx]) {
-              if (limit_state & (1 << idx)) {
-                #ifdef COREXY
-                  if (idx==AXIS_3) { axislock &= ~(step_pin[AXIS_3]); }
-                  #if N_AXIS > 3
-                    else if (idx==AXIS_4) { axislock &= ~(step_pin[AXIS_4]); }
-                  #endif
-                  #if N_AXIS > 4
-                    else if (idx==AXIS_5) { axislock &= ~(step_pin[AXIS_5]); }
-                  #endif
-                  #if N_AXIS > 5
-                    else if (idx==AXIS_6) { axislock &= ~(step_pin[AXIS_6]); }
-                  #endif
-                  else { axislock &= ~(step_pin[A_MOTOR]|step_pin[B_MOTOR]); }
-                #else
-                  axislock &= ~(step_pin[idx]);
+    // Perform homing cycle. Planner buffer should be empty, as required to initiate the homing cycle.
+    pl_data->feed_rate = homing_rate; // Set current homing rate.
+    plan_buffer_line(target, pl_data); // Bypass mc_line(). Directly plan homing motion.
+
+    sys.step_control = STEP_CONTROL_EXECUTE_SYS_MOTION; // Set to execute homing motion and clear existing flags.
+    st_prep_buffer(); // Prep and fill segment buffer from newly planned block.
+    st_wake_up(); // Initiate motion
+    do {
+      if (approach) {
+        // Check limit state. Lock out cycle axes when they change.
+        limit_state = limits_get_state();
+        for (idx=0; idx<N_AXIS; idx++) {
+          if (axislock & step_pin[idx]) {
+            if (limit_state & (1 << idx)) {
+              #ifdef COREXY
+                if (idx==AXIS_3) { axislock &= ~(step_pin[AXIS_3]); }
+                #if N_AXIS > 3
+                  else if (idx==AXIS_4) { axislock &= ~(step_pin[AXIS_4]); }
                 #endif
-              }
+                #if N_AXIS > 4
+                  else if (idx==AXIS_5) { axislock &= ~(step_pin[AXIS_5]); }
+                #endif
+                #if N_AXIS > 5
+                  else if (idx==AXIS_6) { axislock &= ~(step_pin[AXIS_6]); }
+                #endif
+                else { axislock &= ~(step_pin[A_MOTOR]|step_pin[B_MOTOR]); }
+              #else
+                axislock &= ~(step_pin[idx]);
+              #endif
             }
           }
-          sys.homing_axis_lock = axislock;
         }
-
-        st_prep_buffer(); // Check and prep segment buffer. NOTE: Should take no longer than 200us.
-
-        // Exit routines: No time to run protocol_execute_realtime() in this loop.
-        if (sys_rt_exec_state & (EXEC_SAFETY_DOOR | EXEC_RESET | EXEC_CYCLE_STOP)) {
-          uint8_t rt_exec = sys_rt_exec_state;
-          // Homing failure condition: Reset issued during cycle.
-          if (rt_exec & EXEC_RESET) { system_set_exec_alarm(EXEC_ALARM_HOMING_FAIL_RESET); }
-          // Homing failure condition: Safety door was opened.
-          if (rt_exec & EXEC_SAFETY_DOOR) { system_set_exec_alarm(EXEC_ALARM_HOMING_FAIL_DOOR); }
-          // Homing failure condition: Limit switch still engaged after pull-off motion
-          if (!approach && (limits_get_state() & cycle_mask)) { system_set_exec_alarm(EXEC_ALARM_HOMING_FAIL_PULLOFF); }
-          // Homing failure condition: Limit switch not found during approach.
-          if (approach && (rt_exec & EXEC_CYCLE_STOP)) { system_set_exec_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH); }
-          if (sys_rt_exec_alarm) {
-            mc_reset(); // Stop motors, if they are running.
-            protocol_execute_realtime();
-            return;
-          } else {
-            // Pull-off motion complete. Disable CYCLE_STOP from executing.
-            system_clear_exec_state_flag(EXEC_CYCLE_STOP);
-            break;
-          }
-        }
-
-      } while (STEP_MASK & axislock);
-      st_reset(); // Immediately force kill steppers and reset step segment buffer.
-      delay_ms(settings.homing_debounce_delay); // Delay to allow transient dynamics to dissipate.
-
-      // Reverse direction and reset homing rate for locate cycle(s).
-      approach = !approach;
-
-      // After first cycle, homing enters locating phase. Shorten search to pull-off distance.
-      if (approach) {
-        max_travel = settings.homing_pulloff*HOMING_AXIS_LOCATE_SCALAR;
-        homing_rate = settings.homing_feed_rate;
-      } else {
-        max_travel = settings.homing_pulloff;
-        homing_rate = settings.homing_seek_rate;
+        sys.homing_axis_lock = axislock;
       }
-    } while (n_cycle-- > 0);
-  #endif // DEFAULTS_RAMPS_BOARD
+
+      st_prep_buffer(); // Check and prep segment buffer. NOTE: Should take no longer than 200us.
+
+      // Exit routines: No time to run protocol_execute_realtime() in this loop.
+      if (sys_rt_exec_state & (EXEC_SAFETY_DOOR | EXEC_RESET | EXEC_CYCLE_STOP)) {
+        uint8_t rt_exec = sys_rt_exec_state;
+        // Homing failure condition: Reset issued during cycle.
+        if (rt_exec & EXEC_RESET) { system_set_exec_alarm(EXEC_ALARM_HOMING_FAIL_RESET); }
+        // Homing failure condition: Safety door was opened.
+        if (rt_exec & EXEC_SAFETY_DOOR) { system_set_exec_alarm(EXEC_ALARM_HOMING_FAIL_DOOR); }
+        // Homing failure condition: Limit switch still engaged after pull-off motion
+        if (!approach && (limits_get_state() & cycle_mask)) { system_set_exec_alarm(EXEC_ALARM_HOMING_FAIL_PULLOFF); }
+        // Homing failure condition: Limit switch not found during approach.
+        if (approach && (rt_exec & EXEC_CYCLE_STOP)) { system_set_exec_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH); }
+        if (sys_rt_exec_alarm) {
+          mc_reset(); // Stop motors, if they are running.
+          protocol_execute_realtime();
+          return;
+        } else {
+          // Pull-off motion complete. Disable CYCLE_STOP from executing.
+          system_clear_exec_state_flag(EXEC_CYCLE_STOP);
+          break;
+        }
+      }
+
+      //TODO:
+#define STEP_MASK  (0x1F)
+    } while (STEP_MASK & axislock);
+    st_reset(); // Immediately force kill steppers and reset step segment buffer.
+    delay_ms(settings.homing_debounce_delay); // Delay to allow transient dynamics to dissipate.
+
+    // Reverse direction and reset homing rate for locate cycle(s).
+    approach = !approach;
+
+    // After first cycle, homing enters locating phase. Shorten search to pull-off distance.
+    if (approach) {
+      max_travel = settings.homing_pulloff*HOMING_AXIS_LOCATE_SCALAR;
+      homing_rate = settings.homing_feed_rate;
+    } else {
+      max_travel = settings.homing_pulloff;
+      homing_rate = settings.homing_seek_rate;
+    }
+  } while (n_cycle-- > 0);
+
 
   // The active cycle axes should now be homed and machine limits have been located. By
   // default, Grbl defines machine space as all negative, as do most CNCs. Since limit switches

@@ -446,7 +446,7 @@ Subject: Re-organized status messages to be more coherent and centralized.
 parser and settings modules to be centralized into two message modules:
 status feedback from executing a line and warnings for misc feedback.
 
-- Pulled out the printPgmString() messages in settings.c and placed it
+- Pulled out the printString() messages in settings.c and placed it
 into the new module. (settings_dump() not moved).
 
 - Some other minor edits. Renaming defines, comment updates, etc.

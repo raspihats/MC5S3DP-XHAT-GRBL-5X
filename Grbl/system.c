@@ -24,14 +24,22 @@
 
 void system_init()
 {
-  CONTROL_DDR &= ~(CONTROL_MASK); // Configure as input pins
+  // Configure CONTROL pins as inputs
   #ifdef DISABLE_CONTROL_PIN_PULL_UP
-    CONTROL_PORT &= ~(CONTROL_MASK); // Normal low operation. Requires external pull-down.
+  LL_GPIO_SetPinPull(CONTROL_RESET_PORT, CONTROL_RESET_PIN, LL_GPIO_PULL_NO);
+  LL_GPIO_SetPinPull(CONTROL_FEED_HOLD_PORT, CONTROL_FEED_HOLD_PIN, LL_GPIO_PULL_NO);
+  LL_GPIO_SetPinPull(CONTROL_CYCLE_START_PORT, CONTROL_CYCLE_START_PIN, LL_GPIO_PULL_NO);
+  LL_GPIO_SetPinPull(CONTROL_SAFETY_DOOR_PORT, CONTROL_SAFETY_DOOR_PORT, LL_GPIO_PULL_NO);
   #else
-    CONTROL_PORT |= CONTROL_MASK;   // Enable internal pull-up resistors. Normal high operation.
+  // Enable internal pull-up resistors. Normal high operation.
+  LL_GPIO_SetPinPull(CONTROL_RESET_PORT, CONTROL_RESET_PIN, LL_GPIO_PULL_UP);
+  LL_GPIO_SetPinPull(CONTROL_FEED_HOLD_PORT, CONTROL_FEED_HOLD_PIN, LL_GPIO_PULL_UP);
+  LL_GPIO_SetPinPull(CONTROL_CYCLE_START_PORT, CONTROL_CYCLE_START_PIN, LL_GPIO_PULL_UP);
+  LL_GPIO_SetPinPull(CONTROL_SAFETY_DOOR_PORT, CONTROL_SAFETY_DOOR_PORT, LL_GPIO_PULL_UP);
   #endif
-  CONTROL_PCMSK |= CONTROL_MASK;  // Enable specific pins of the Pin Change Interrupt
-  PCICR |= (1 << CONTROL_INT);   // Enable Pin Change Interrupt
+  // TODO:
+  // Enable specific pins of the Pin Change Interrupt
+  // Enable Pin Change Interrupt
 }
 
 
@@ -41,16 +49,27 @@ void system_init()
 uint8_t system_control_get_state()
 {
   uint8_t control_state = 0;
-  uint8_t pin = (CONTROL_PIN & CONTROL_MASK);
-  #ifdef INVERT_CONTROL_PIN_MASK
-    pin ^= INVERT_CONTROL_PIN_MASK;
-  #endif
-  if (pin) {
-    if (bit_isfalse(pin,(1<<CONTROL_SAFETY_DOOR_BIT))) { control_state |= CONTROL_PIN_INDEX_SAFETY_DOOR; }
-    if (bit_isfalse(pin,(1<<CONTROL_RESET_BIT))) { control_state |= CONTROL_PIN_INDEX_RESET; }
-    if (bit_isfalse(pin,(1<<CONTROL_FEED_HOLD_BIT))) { control_state |= CONTROL_PIN_INDEX_FEED_HOLD; }
-    if (bit_isfalse(pin,(1<<CONTROL_CYCLE_START_BIT))) { control_state |= CONTROL_PIN_INDEX_CYCLE_START; }
+
+  if(!LL_GPIO_IsInputPinSet(CONTROL_RESET_PORT, CONTROL_RESET_PIN)) {
+    control_state |= CONTROL_PIN_INDEX_RESET;
   }
+
+  if(!LL_GPIO_IsInputPinSet(CONTROL_FEED_HOLD_PORT, CONTROL_FEED_HOLD_PIN)) {
+    control_state |= CONTROL_PIN_INDEX_FEED_HOLD;
+  }
+
+  if(!LL_GPIO_IsInputPinSet(CONTROL_CYCLE_START_PORT, CONTROL_CYCLE_START_PIN)) {
+    control_state |= CONTROL_PIN_INDEX_CYCLE_START;
+  }
+
+  if(!LL_GPIO_IsInputPinSet(CONTROL_SAFETY_DOOR_PORT, CONTROL_SAFETY_DOOR_PORT)) {
+    control_state |= CONTROL_PIN_INDEX_SAFETY_DOOR;
+  }
+
+#ifdef INVERT_CONTROL_PIN_MASK
+  control_state ^= INVERT_CONTROL_PIN_MASK;
+#endif
+
   return(control_state);
 }
 
@@ -59,7 +78,7 @@ uint8_t system_control_get_state()
 // only the realtime command execute variable to have the main program execute these when
 // its ready. This works exactly like the character-based realtime commands when picked off
 // directly from the incoming serial data stream.
-ISR(CONTROL_INT_vect)
+void ISR_CONTROL_INT()
 {
   uint8_t pin = system_control_get_state();
   if (pin) {
@@ -353,57 +372,49 @@ uint8_t system_check_travel_limits(float *target)
 
 // Special handlers for setting and clearing Grbl's real-time execution flags.
 void system_set_exec_state_flag(uint8_t mask) {
-  uint8_t sreg = SREG;
-  cli();
+  __disable_irq();
   sys_rt_exec_state |= (mask);
-  SREG = sreg;
+  __enable_irq();
 }
 
 void system_clear_exec_state_flag(uint8_t mask) {
-  uint8_t sreg = SREG;
-  cli();
+  __disable_irq();
   sys_rt_exec_state &= ~(mask);
-  SREG = sreg;
+  __enable_irq();
 }
 
 void system_set_exec_alarm(uint8_t code) {
-  uint8_t sreg = SREG;
-  cli();
+  __disable_irq();
   sys_rt_exec_alarm = code;
-  SREG = sreg;
+  __enable_irq();
 }
 
 void system_clear_exec_alarm() {
-  uint8_t sreg = SREG;
-  cli();
+  __disable_irq();
   sys_rt_exec_alarm = 0;
-  SREG = sreg;
+  __enable_irq();
 }
 
 void system_set_exec_motion_override_flag(uint8_t mask) {
-  uint8_t sreg = SREG;
-  cli();
+  __disable_irq();
   sys_rt_exec_motion_override |= (mask);
-  SREG = sreg;
+  __enable_irq();
 }
 
 void system_set_exec_accessory_override_flag(uint8_t mask) {
-  uint8_t sreg = SREG;
-  cli();
+  __disable_irq();
   sys_rt_exec_accessory_override |= (mask);
-  SREG = sreg;
+  __enable_irq();
 }
 
 void system_clear_exec_motion_overrides() {
-  uint8_t sreg = SREG;
-  cli();
+  __disable_irq();
   sys_rt_exec_motion_override = 0;
-  SREG = sreg;
+  __enable_irq();
 }
 
 void system_clear_exec_accessory_overrides() {
-  uint8_t sreg = SREG;
-  cli();
+  __disable_irq();
   sys_rt_exec_accessory_override = 0;
-  SREG = sreg;
+  __enable_irq();
 }

@@ -65,21 +65,27 @@ uint8_t serial_get_tx_buffer_count()
 
 void serial_init()
 {
-  // Set baud rate
-  #if BAUD_RATE < 57600
-    uint16_t UBRR0_value = ((F_CPU / (8L * BAUD_RATE)) - 1)/2 ;
-    UCSR0A &= ~(1 << U2X0); // baud doubler off  - Only needed on Uno XXX
-  #else
-    uint16_t UBRR0_value = ((F_CPU / (4L * BAUD_RATE)) - 1)/2;
-    UCSR0A |= (1 << U2X0);  // baud doubler on for high baud rates, i.e. 115200
-  #endif
-  UBRR0H = UBRR0_value >> 8;
-  UBRR0L = UBRR0_value;
+  LL_USART_InitTypeDef USART_InitStruct;
 
-  // enable rx, tx, and interrupt on complete reception of a byte
-  UCSR0B |= (1<<RXEN0 | 1<<TXEN0 | 1<<RXCIE0);
+  LL_USART_Disable(USART1);
 
   // defaults to 8-bit, no parity, 1 stop bit
+  USART_InitStruct.BaudRate = BAUD_RATE;
+  USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
+  USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
+  USART_InitStruct.Parity = LL_USART_PARITY_NONE;
+  USART_InitStruct.TransferDirection = LL_USART_DIRECTION_TX_RX;
+  USART_InitStruct.HardwareFlowControl = LL_USART_HWCONTROL_NONE;
+  USART_InitStruct.OverSampling = LL_USART_OVERSAMPLING_16;
+  LL_USART_Init(USART1, &USART_InitStruct);
+
+  LL_USART_ConfigAsyncMode(USART1);
+
+  LL_USART_Enable(USART1);
+
+  // enable interrupt on complete reception of a byte
+  LL_USART_EnableIT_RXNE(USART1);
+
 }
 
 
@@ -100,17 +106,17 @@ void serial_write(uint8_t data) {
   serial_tx_buffer_head = next_head;
 
   // Enable Data Register Empty Interrupt to make sure tx-streaming is running
-  UCSR0B |=  (1 << UDRIE0);
+  LL_USART_EnableIT_TXE(USART1);
 }
 
 
-// Data Register Empty Interrupt handler
-ISR(SERIAL_UDRE)
+// Transmit register empty ISR
+void ISR_SERIAL_TXE()
 {
   uint8_t tail = serial_tx_buffer_tail; // Temporary serial_tx_buffer_tail (to optimize for volatile)
 
   // Send a byte from the buffer
-  UDR0 = serial_tx_buffer[tail];
+  LL_USART_TransmitData8(USART1, serial_tx_buffer[tail]);
 
   // Update tail position
   tail++;
@@ -119,7 +125,7 @@ ISR(SERIAL_UDRE)
   serial_tx_buffer_tail = tail;
 
   // Turn off Data Register Empty Interrupt to stop tx-streaming if this concludes the transfer
-  if (tail == serial_tx_buffer_head) { UCSR0B &= ~(1 << UDRIE0); }
+  if (tail == serial_tx_buffer_head) { LL_USART_DisableIT_TXE(USART1); }
 }
 
 
@@ -141,9 +147,10 @@ uint8_t serial_read()
 }
 
 
-ISR(SERIAL_RX)
+// Receive register not empty ISR
+void ISR_SERIAL_RXNE(void)
 {
-  uint8_t data = UDR0;
+  uint8_t data = LL_USART_ReceiveData8(USART1);
   uint8_t next_head;
 
   // Pick off realtime command characters directly from the serial stream. These characters are

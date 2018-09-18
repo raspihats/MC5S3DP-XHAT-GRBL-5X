@@ -25,7 +25,7 @@
 
 void printString(const char *s);
 
-void printPgmString(const char *s);
+void printString(const char *s);
 
 void printInteger(long n);
 

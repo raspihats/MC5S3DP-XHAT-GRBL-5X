@@ -55,26 +55,30 @@
   #define N_AXIS 3 // Number of axes = 3 if not DEFAULTS_RAMPS_BOARD
 #endif
 
-#define AXIS_1 0        // Axis indexing value. Must start with 0 and be continuous.
+// Axis indexing value. Must start with 0 and be continuous.
+typedef enum {
+  AXIS_1 = 0,
+  AXIS_2 = 1,
+  AXIS_3 = 2,
+  AXIS_4 = 3,
+  AXIS_5 = 4,
+  AXIS_6 = 5,
+} axis_t;
+
 #define AXIS_1_NAME 'X'
-#define AXIS_2 1
 #define AXIS_2_NAME 'Y'
-#define AXIS_3 2
 #define AXIS_3_NAME 'Z'
 
 #if N_AXIS <3
   #error "N_AXIS must be >= 3. N_AXIS < 3 is not implemented."
 #endif
 #if N_AXIS > 3
-  #define AXIS_4 3
   #define AXIS_4_NAME 'A' // Letter of axis number 4
 #endif
 #if N_AXIS > 4
-  #define AXIS_5 4
   #define AXIS_5_NAME 'B' // Letter of axis number 5
 #endif
 #if N_AXIS > 5
-  #define AXIS_6 5
   #define AXIS_6_NAME 'C' // Letter of axis number 6
 #endif
 #if N_AXIS > 6
