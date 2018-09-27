@@ -104,7 +104,7 @@ uint8_t gc_execute_line(char *line)
      perform initial error-checks for command word modal group violations, for any repeated
      words, and for negative values set for the value words F, N, P, T, and S. */
 
-  uint8_t word_bit; // Bit-value for assigning tracking variables
+  uint8_t word_bit = MODAL_GROUP_G0; // Bit-value for assigning tracking variables
   uint8_t char_counter;
   char letter;
   float value;

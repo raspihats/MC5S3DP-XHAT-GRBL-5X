@@ -192,7 +192,6 @@ int main(void)
   /* USER CODE END 3 */
 
 }
-
 static void LL_Init(void)
 {
   
@@ -235,8 +234,6 @@ void SystemClock_Config(void)
   }
   LL_PWR_SetRegulVoltageScaling(LL_PWR_REGU_VOLTAGE_SCALE1);
 
-  LL_RCC_HSE_EnableBypass();
-
   LL_RCC_HSE_Enable();
 
    /* Wait till HSE is ready */
@@ -244,7 +241,7 @@ void SystemClock_Config(void)
   {
     
   }
-  LL_RCC_PLL_ConfigDomain_SYS(LL_RCC_PLLSOURCE_HSE, LL_RCC_PLLM_DIV_8, 200, LL_RCC_PLLP_DIV_2);
+  LL_RCC_PLL_ConfigDomain_SYS(LL_RCC_PLLSOURCE_HSE, LL_RCC_PLLM_DIV_25, 200, LL_RCC_PLLP_DIV_2);
 
   LL_RCC_PLL_Enable();
 
@@ -316,6 +313,8 @@ void MX_ADC1_Init(void)
   LL_ADC_REG_Init(ADC1, &ADC_REG_InitStruct);
 
   LL_ADC_REG_SetFlagEndOfConversion(ADC1, LL_ADC_REG_FLAG_EOC_UNITARY_CONV);
+
+  LL_ADC_DisableIT_EOCS(ADC1);
 
   ADC_CommonInitStruct.CommonClock = LL_ADC_CLOCK_SYNC_PCLK_DIV4;
   LL_ADC_CommonInit(__LL_ADC_COMMON_INSTANCE(ADC1), &ADC_CommonInitStruct);

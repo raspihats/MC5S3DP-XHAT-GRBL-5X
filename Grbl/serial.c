@@ -106,7 +106,9 @@ void serial_write(uint8_t data) {
   serial_tx_buffer_head = next_head;
 
   // Enable Data Register Empty Interrupt to make sure tx-streaming is running
-  LL_USART_EnableIT_TXE(USART1);
+  if(! LL_USART_IsEnabledIT_TXE(USART1)) {
+    LL_USART_EnableIT_TXE(USART1);
+  }
 }
 
 
@@ -115,17 +117,19 @@ void ISR_SERIAL_TXE()
 {
   uint8_t tail = serial_tx_buffer_tail; // Temporary serial_tx_buffer_tail (to optimize for volatile)
 
-  // Send a byte from the buffer
-  LL_USART_TransmitData8(USART1, serial_tx_buffer[tail]);
+  if (tail == serial_tx_buffer_head) {
+    LL_USART_DisableIT_TXE(USART1);
+  }
+  else {
+    // Send a byte from the buffer
+    LL_USART_TransmitData8(USART1, serial_tx_buffer[tail]);
 
-  // Update tail position
-  tail++;
-  if (tail == TX_RING_BUFFER) { tail = 0; }
+    // Update tail position
+    tail++;
+    if (tail == TX_RING_BUFFER) { tail = 0; }
 
-  serial_tx_buffer_tail = tail;
-
-  // Turn off Data Register Empty Interrupt to stop tx-streaming if this concludes the transfer
-  if (tail == serial_tx_buffer_head) { LL_USART_DisableIT_TXE(USART1); }
+    serial_tx_buffer_tail = tail;
+  }
 }
 
 

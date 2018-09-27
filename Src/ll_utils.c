@@ -8,7 +8,7 @@
 #include "ll_utils.h"
 
 
-LL_GPIO_WriteOutputPin(GPIO_TypeDef* gpio, const uint32_t pin, const uint32_t value) {
+void LL_GPIO_WriteOutputPin(GPIO_TypeDef* gpio, const uint32_t pin, const uint32_t value) {
   if(value > 0) {
     LL_GPIO_SetOutputPin(gpio, pin);
   }

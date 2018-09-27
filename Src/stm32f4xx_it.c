@@ -33,9 +33,10 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx.h"
 #include "stm32f4xx_it.h"
-#include "serial.h"
 
 /* USER CODE BEGIN 0 */
+#include "serial.h"
+
 uint32_t millisec_counter;
 
 /* USER CODE END 0 */
