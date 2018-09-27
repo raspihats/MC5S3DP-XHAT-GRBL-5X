@@ -26,9 +26,12 @@ static float pwm_gradient; // Precalulated value to speed up rpm to PWM conversi
 
 
 void spindle_init()
-{    
+{
   // Configure variable spindle PWM and enable pin.
 
+  LL_TIM_CC_EnableChannel(TIM3, LL_TIM_CHANNEL_CH4);
+  LL_TIM_EnableAllOutputs(TIM3);
+  LL_TIM_EnableCounter(TIM3);
 
   pwm_gradient = SPINDLE_PWM_RANGE/(settings.rpm_max-settings.rpm_min);
   spindle_stop();
@@ -140,7 +143,7 @@ void spindle_set_speed(uint16_t pwm_value)
 #else 
 
   // Called by spindle_set_state() and step segment generator. Keep routine small and efficient.
-  uint16_t spindle_compute_pwm_value(float rpm) // Mega2560 PWM register is 16-bit.
+  uint16_t spindle_compute_pwm_value(float rpm) // PWM register is 16-bit.
   {
 	uint16_t pwm_value;
 	rpm *= (0.010*sys.spindle_speed_ovr); // Scale by spindle speed override value.

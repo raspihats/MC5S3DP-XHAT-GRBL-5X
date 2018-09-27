@@ -222,10 +222,8 @@
   #define SPINDLE_DIRECTION_PORT    DQ_4_GPIO_Port
   #define SPINDLE_DIRECTION_BIT     DQ_4_Pin
 
-  #define SPINDLE_PWM_MAX_VALUE     1024.0 // Translates to about 1.9 kHz PWM frequency at 1/8 prescaler
-  #ifndef SPINDLE_PWM_MIN_VALUE
+  #define SPINDLE_PWM_MAX_VALUE     4095 // Translates to about 24.4 kHz PWM frequency
   #define SPINDLE_PWM_MIN_VALUE     1   // Must be greater than zero.
-  #endif
   #define SPINDLE_PWM_OFF_VALUE     0
   #define SPINDLE_PWM_RANGE         (SPINDLE_PWM_MAX_VALUE-SPINDLE_PWM_MIN_VALUE)
 
