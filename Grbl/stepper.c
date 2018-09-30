@@ -48,6 +48,7 @@
 #define MAX_AMASS_LEVEL 3
 // AMASS_LEVEL0: Normal operation. No AMASS. No upper cutoff frequency. Starts at LEVEL1 cutoff frequency.
 #define F_CPU 100000000
+#define TICKS_PER_MICROSECOND (F_CPU/1000000)
 #define AMASS_LEVEL1 (F_CPU/8000) // Over-drives ISR (x2). Defined as F_CPU/(Cutoff frequency in Hz)
 #define AMASS_LEVEL2 (F_CPU/4000) // Over-drives ISR (x4)
 #define AMASS_LEVEL3 (F_CPU/2000) // Over-drives ISR (x8)
@@ -266,7 +267,7 @@ void st_wake_up()
 {
 
   // Enable stepper drivers.
-  bool pin_state = bit_istrue(settings.flags, BITFLAG_INVERT_ST_ENABLE);
+  bool pin_state = bit_isfalse(settings.flags, BITFLAG_INVERT_ST_ENABLE);
   for (uint32_t idx = 0; idx < N_AXIS; idx++) {
     LL_GPIO_WriteOutputPin(steppers[idx].enable.port, steppers[idx].enable.pin, pin_state);
   }
@@ -283,12 +284,15 @@ void st_wake_up()
     OCR0A = -(((settings.pulse_microseconds)*TICKS_PER_MICROSECOND) >> 3);
   #else // Normal operation
     // Set step pulse time. Ad hoc computation from oscilloscope. Uses two's complement.
-    st.step_pulse_time = -(((settings.pulse_microseconds-2)*TICKS_PER_MICROSECOND) >> 3);
+//    st.step_pulse_time = -(((settings.pulse_microseconds-2)*TICKS_PER_MICROSECOND) >> 3);
+    st.step_pulse_time = settings.pulse_microseconds;
   #endif
 
   // Enable Stepper Driver Interrupt
-    //TODO
-//  LL_TIM_EnableIT_UPDATE();
+  LL_TIM_SetCounter(TIM10, 0);
+  LL_TIM_SetAutoReload(TIM10, 0xFFFF);
+  LL_TIM_EnableIT_UPDATE(TIM10);
+  LL_TIM_EnableCounter(TIM10);
 }
 
 
@@ -297,9 +301,11 @@ void st_go_idle()
 {
   // Disable Stepper Driver Interrupt. Allow Stepper Port Reset Interrupt to finish, if active.
   // Disable Timer interrupt
+  LL_TIM_DisableIT_UPDATE(TIM10);
   // Reset clock to no prescaling.
-  //TODO
-//  LL_TIM_DisableIT_UPDATE();
+  // TODO: LL_TIM_SetPrescaler(TIM10, 0);
+  LL_TIM_DisableCounter(TIM10);
+
   busy = false;
 
   // Set stepper driver idle state, disabled or enabled, depending on settings and circumstances.
@@ -367,10 +373,7 @@ void st_go_idle()
    ISR is 5usec typical and 25usec maximum, well below requirement.
    NOTE: This ISR expects at least one step to be executed per segment.
 */
-// TODO: Replace direct updating of the int32 position counters in the ISR somehow. Perhaps use smaller
-// int8 variables and update position counters only when a segment completes. This can get complicated
-// with probing and homing cycles that require true real-time positions.
-void ISR_TIMER1_COMPA()
+void ISR_TIMER10_UPDATE()
 {
   axis_t axis;
 
@@ -403,12 +406,14 @@ void ISR_TIMER1_COMPA()
 
   // Enable step pulse reset timer so that The Stepper Port Reset Interrupt can reset the signal after
   // exactly settings.pulse_microseconds microseconds, independent of the main Timer1 prescaler.
-//TODO  TCNT0 = st.step_pulse_time; // Reload Timer0 counter
+//  TCNT0 = st.step_pulse_time; // Reload Timer0 counter
 //  TCCR0B = (1<<CS01); // Begin Timer0. Full speed, 1/8 prescaler
+  LL_TIM_SetCounter(TIM11, 0);
+  LL_TIM_SetAutoReload(TIM11, st.step_pulse_time);
+  LL_TIM_EnableIT_UPDATE(TIM11);
+  LL_TIM_EnableCounter(TIM11);
 
   busy = true;
-//TODO  sei(); // Re-enable interrupts to allow Stepper Port Reset Interrupt to fire on-time.
-         // NOTE: The remaining code in this ISR will finish before returning to main program.
 
   // If there is no step segment, attempt to pop one from the stepper buffer
   if (st.exec_segment == NULL) {
@@ -423,7 +428,7 @@ void ISR_TIMER1_COMPA()
       #endif
 
       // Initialize step segment timing per step and load number of steps to execute.
-      //TODO OCR1A = st.exec_segment->cycles_per_tick;
+      LL_TIM_SetAutoReload(TIM10, st.exec_segment->cycles_per_tick);
       st.step_count = st.exec_segment->n_step; // NOTE: Can sometimes be zero when moving slow.
       // If the new segment starts a new planner block, initialize stepper variables and counters.
       // NOTE: When the segment data index changes, this indicates a new planner block.
@@ -509,17 +514,20 @@ void ISR_TIMER1_COMPA()
    cause issues at high step rates if another high frequency asynchronous interrupt is
    added to Grbl.
 */
-// This interrupt is enabled by ISR_TIMER1_COMPAREA when it sets the motor port bits to execute
+// This interrupt is enabled by ISR_TIMER10_COMP when it sets the motor port bits to execute
 // a step. This ISR resets the motor port after a short period (settings.pulse_microseconds)
 // completing one step cycle.
-void ISR_TIMER0_OVF()
+void ISR_TIMER11_UPDATE()
 {
   // Reset stepping pins (leave the direction pins)
   for(axis_t axis = AXIS_1; axis < N_AXIS; axis++) {
     LL_GPIO_WriteOutputPin(steppers[axis].step.port, steppers[axis].step.pin, step_port_invert_mask & (1 << axis));
   }
 
-  //TODO: TCCR0B = 0; // Disable Timer0 to prevent re-entering this interrupt when it's not needed.
+  // Disable Timer11 to prevent re-entering this interrupt when it's not needed.
+  LL_TIM_DisableCounter(TIM11);
+  LL_TIM_DisableIT_UPDATE(TIM11);
+
 }
 #ifdef STEP_PULSE_DELAY
   // This interrupt is used only when STEP_PULSE_DELAY is enabled. Here, the step pulse is
@@ -599,15 +607,24 @@ void st_reset()
 void stepper_init()
 {
   // Configure STEP, ENABLE and DIRECTION pins as outputs
-  // STEP, ENABLE and DIRECTION pins are initialized as outputs by STM32CubeMx
+  // STEP, ENABLE and DIRECTION pins are configured as outputs by STM32CubeMx
 
-  // Configure Timer 1: Stepper Driver Interrupt
-  // TODO
+  // Disable stepper drivers
+  bool pin_state = bit_istrue(settings.flags, BITFLAG_INVERT_ST_ENABLE);
+  for (uint32_t idx = 0; idx < N_AXIS; idx++) {
+    LL_GPIO_WriteOutputPin(steppers[idx].enable.port, steppers[idx].enable.pin, pin_state);
+  }
 
-  // Configure Timer 0: Stepper Port Reset Interrupt
-  // TODO
+  // Configure Timer 10: Stepper Driver Interrupt
+  // Configure Timer 11: Stepper Port Reset Interrupt
+  // Timer 10 and Timer 11 are configured by STM32CubeMx
+//  LL_TIM_EnableCounter(TIM10);
+//  LL_TIM_EnableIT_CC1(TIM10);
+
+
   #ifdef STEP_PULSE_DELAY
-    // Enable Timer0 Compare Match A interrupt
+    // Enable Timer11 Compare Match A interrupt
+  LL_TIM_EnableIT_CC1(TIM11);
   #endif
 }
 
@@ -1019,7 +1036,7 @@ void st_prep_buffer()
     float inv_rate = dt/(last_n_steps_remaining - step_dist_remaining); // Compute adjusted step rate inverse
 
     // Compute CPU cycles per step for the prepped segment.
-    uint32_t cycles = ceil( (TICKS_PER_MICROSECOND*1000000*60)*inv_rate ); // (cycles/step)
+    uint32_t cycles = ceil(((double)TICKS_PER_MICROSECOND * 1000000 * 60) * inv_rate); // (cycles/step)
 
     #ifdef ADAPTIVE_MULTI_AXIS_STEP_SMOOTHING
       // Compute step timing and multi-axis smoothing level.

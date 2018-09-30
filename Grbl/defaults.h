@@ -454,8 +454,8 @@
 #endif
 
 #ifdef DEFAULTS_RAMPS_BOARD
-  #define DEFAULT_AXIS1_STEPS_PER_UNIT 80
-  #define DEFAULT_AXIS2_STEPS_PER_UNIT 80
+  #define DEFAULT_AXIS1_STEPS_PER_UNIT 1000
+  #define DEFAULT_AXIS2_STEPS_PER_UNIT 1000
   #define DEFAULT_AXIS3_STEPS_PER_UNIT 4000
   #define DEFAULT_AXIS1_MAX_RATE 9000.0 // 9000 mm/min = 9000/60 = 150 mm/sec
   #define DEFAULT_AXIS2_MAX_RATE 9000.0 // 9000 mm/min = 9000/60 = 150 mm/sec
@@ -463,8 +463,8 @@
   #define DEFAULT_AXIS1_ACCELERATION (300.0*60*60) // 300*60*60 mm/min^2 = 300 mm/sec^2
   #define DEFAULT_AXIS2_ACCELERATION (300.0*60*60) // 300*60*60 mm/min^2 = 300 mm/sec^2
   #define DEFAULT_AXIS3_ACCELERATION (100.0*60*60) // 100*60*60 mm/min^2 = 100 mm/sec^2
-  #define DEFAULT_AXIS1_MAX_TRAVEL 200.0 // mm
-  #define DEFAULT_AXIS2_MAX_TRAVEL 200.0 // mm
+  #define DEFAULT_AXIS1_MAX_TRAVEL 500.0 // mm
+  #define DEFAULT_AXIS2_MAX_TRAVEL 500.0 // mm
   #define DEFAULT_AXIS3_MAX_TRAVEL 200.0 // mm
   #if N_AXIS > 3
     #define DEFAULT_AXIS4_STEPS_PER_UNIT 8.888889 // Direct drive : (200 pas par tours * 1/16 microsteps)/360°
@@ -494,7 +494,7 @@
   #define DEFAULT_JUNCTION_DEVIATION 0.02 // mm
   #define DEFAULT_ARC_TOLERANCE 0.002 // mm
   #define DEFAULT_REPORT_INCHES 0 // false
-  #define DEFAULT_INVERT_ST_ENABLE 0 // false
+  #define DEFAULT_INVERT_ST_ENABLE 1 // false
   #define DEFAULT_INVERT_LIMIT_PINS 0 // false
   #define DEFAULT_SOFT_LIMIT_ENABLE 1 // true
   #define DEFAULT_HARD_LIMIT_ENABLE 0  // false
