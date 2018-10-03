@@ -319,30 +319,30 @@ uint8_t gc_execute_line(char *line)
             if (letter == AXIS_3_NAME) {
               word_bit = WORD_Z; gc_block.values.xyz[AXIS_3] = value; axis_words |= (1<<AXIS_3);
             }
-            #ifdef AXIS_4
+            #ifdef AXIS_4_NAME
               if (letter == AXIS_4_NAME) {
                 word_bit = WORD_A; gc_block.values.xyz[AXIS_4] = value; axis_words |= (1<<AXIS_4);
               }
             #endif
-            #ifdef AXIS_5
+            #ifdef AXIS_5_NAME
               if (letter == AXIS_5_NAME) {
                 word_bit = WORD_B; gc_block.values.xyz[AXIS_5] = value; axis_words |= (1<<AXIS_5);
               }
             #endif
-            #ifdef AXIS_6
+            #ifdef AXIS_6_NAME
               if (letter == AXIS_6_NAME) {
                 word_bit = WORD_C; gc_block.values.xyz[AXIS_6] = value; axis_words |= (1<<AXIS_6);
               }
             #endif
             // Error if letter is not an axis name
             if ((letter != AXIS_1_NAME) && (letter != AXIS_2_NAME) && (letter != AXIS_3_NAME)
-            #ifdef AXIS_4
+            #ifdef AXIS_4_NAME
               && (letter != AXIS_4_NAME)
             #endif
-            #ifdef AXIS_5
+            #ifdef AXIS_5_NAME
               && (letter != AXIS_5_NAME)
             #endif
-            #ifdef AXIS_6
+            #ifdef AXIS_6_NAME
               && (letter != AXIS_6_NAME)
             #endif
             ) {
