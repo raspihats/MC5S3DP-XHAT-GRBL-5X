@@ -58,6 +58,7 @@
 
 /* USER CODE BEGIN Includes */
 #include "ll_utils.h"
+#include "eeprom_emulation.h"
 
 /* USER CODE END Includes */
 
