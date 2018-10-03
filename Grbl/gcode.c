@@ -1173,7 +1173,7 @@ uint8_t gc_execute_line(char *line)
 
   - Canned cycles
   - Tool radius compensation
-  - A,B,C-axes // A, B & C Supported in Ramps 1.4 grbl-Mega-5X version if N_AXIS > 3
+  - A,B,C-axes // A, B & C Supported in grbl-Mega-5X version if N_AXIS > 3
   - Evaluation of expressions
   - Variables
   - Override control (TBD)

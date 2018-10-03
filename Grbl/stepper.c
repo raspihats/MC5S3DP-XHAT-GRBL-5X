@@ -143,11 +143,7 @@ typedef struct {
   uint32_t axis_counters[N_AXIS];       // Counter variables for the bresenham line tracer
 
   #ifdef STEP_PULSE_DELAY
-    #ifdef DEFAULTS_RAMPS_BOARD
-      uint8_t step_bits[N_AXIS];  // Stores out_bits output to complete the step pulse delay
-    #else
-      uint8_t step_bits;  // Stores out_bits output to complete the step pulse delay
-    #endif // Ramps Board
+    uint8_t step_bits;  // Stores out_bits output to complete the step pulse delay
   #endif
 
   uint8_t execute_step;     // Flags step execution for each interrupt.
@@ -258,10 +254,6 @@ static st_prep_t prep;
 
 // Stepper state initialization. Cycle should only start if the st.cycle_start flag is
 // enabled. Startup init and limits call this function but shouldn't start the cycle.
-
-#ifdef DEFAULTS_RAMPS_BOARD
-  int idx;
-#endif // Ramps Board
 
 void st_wake_up()
 {
@@ -537,22 +529,7 @@ void ISR_TIMER11_UPDATE()
   // st_wake_up() routine.
   ISR(TIMER0_COMPA_vect)
   {
-    #ifdef DEFAULTS_RAMPS_BOARD
-      STEP_PORT(0) = st.step_bits[0]; // Begin step pulse.
-      STEP_PORT(1) = st.step_bits[1]; // Begin step pulse.
-      STEP_PORT(2) = st.step_bits[2]; // Begin step pulse.
-      #if N_AXIS > 3
-        STEP_PORT(3) = st.step_bits[3]; // Begin step pulse.
-      #endif
-      #if N_AXIS > 4
-        STEP_PORT(4) = st.step_bits[4]; // Begin step pulse.
-      #endif
-      #if N_AXIS > 5
-        STEP_PORT(5) = st.step_bits[5]; // Begin step pulse.
-      #endif
-    #else
-      STEP_PORT = st.step_bits; // Begin step pulse.
-    #endif // Ramps Board
+    STEP_PORT = st.step_bits; // Begin step pulse.
   }
 #endif
 

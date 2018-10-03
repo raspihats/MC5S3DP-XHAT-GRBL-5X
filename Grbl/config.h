@@ -36,23 +36,18 @@
 // one configuration file by placing their specific defaults and pin map at the bottom of this file.
 // If doing so, simply comment out these two defines and see instructions below.
 //#define DEFAULTS_GENERIC
-//#define CPU_MAP_2560_INITIAL
 
 #define DEFAULTS_RAMPS_BOARD
-#define CPU_MAP_2560_RAMPS_BOARD
 
 // Serial baud rate
 // #define BAUD_RATE 230400
 #define BAUD_RATE 115200
 
 // Axis array index values. Must start with 0 and be continuous.
-#ifdef DEFAULTS_RAMPS_BOARD
-  // 4, 5 & 6 axis support only for RAMPS 1.4 (for the moment :-)...)
-  #define N_AXIS 5            // Number of axes
-  #define N_AXIS_LINEAR 3     // Number of linears axis
-#else
-  #define N_AXIS 3 // Number of axes = 3 if not DEFAULTS_RAMPS_BOARD
-#endif
+
+#define N_AXIS 5            // Number of axes
+#define N_AXIS_LINEAR 3     // Number of linears axis
+
 
 // Axis indexing value. Must start with 0 and be continuous.
 typedef enum {
@@ -145,35 +140,30 @@ typedef enum {
 // on separate pin, but homed in one cycle. Also, it should be noted that the function of hard limits
 // will not be affected by pin sharing.
 // NOTE: Defaults are set for a traditional 3-axis CNC machine. Z-axis first to clear, followed by X & Y.
-#ifdef DEFAULTS_RAMPS_BOARD
-  #if N_AXIS == 4 // 4 axis : homing
-    #define HOMING_CYCLE_0 (1<<AXIS_4) // Home 4th axis (A)
-    #define HOMING_CYCLE_1 (1<<AXIS_1) // Home X axis
-    #define HOMING_CYCLE_2 (1<<AXIS_2) // Home Y axis
-    #define HOMING_CYCLE_3 (1<<AXIS_3) // OPTIONAL: Home Z axis
-  #elif N_AXIS == 5 // 5 axis : homing
-    #define HOMING_CYCLE_0 (1<<AXIS_4) // Home 4th axis (A)
-    #define HOMING_CYCLE_1 (1<<AXIS_5) // Home 5th axis (B)
-    #define HOMING_CYCLE_2 (1<<AXIS_1) // Home X axis
-    #define HOMING_CYCLE_3 (1<<AXIS_2) // Home Y axis
-    #define HOMING_CYCLE_4 (1<<AXIS_3) // OPTIONAL: Home Z axis
-  #elif N_AXIS == 6 // 6 axis : homing
-    #define HOMING_CYCLE_0 (1<<AXIS_4) // Home 4th axis (A)
-    #define HOMING_CYCLE_1 (1<<AXIS_5) // Home 5th axis (B)
-    #define HOMING_CYCLE_2 (1<<AXIS_6) // Home 6th axis (C)
-    #define HOMING_CYCLE_3 (1<<AXIS_1) // Home X axis
-    #define HOMING_CYCLE_4 (1<<AXIS_2) // Home Y axis
-    #define HOMING_CYCLE_5 (1<<AXIS_3) // OPTIONAL: Home Z axis
-  #else // Classic 3 axis
-    #define HOMING_CYCLE_0 (1<<AXIS_1) // Home X axis
-    #define HOMING_CYCLE_1 (1<<AXIS_2) // Home Y axis
-    #define HOMING_CYCLE_2 (1<<AXIS_3) // OPTIONAL: Home Z axis
-  #endif
-#else
+#if N_AXIS == 4 // 4 axis : homing
+  #define HOMING_CYCLE_0 (1<<AXIS_4) // Home 4th axis (A)
+  #define HOMING_CYCLE_1 (1<<AXIS_1) // Home X axis
+  #define HOMING_CYCLE_2 (1<<AXIS_2) // Home Y axis
+  #define HOMING_CYCLE_3 (1<<AXIS_3) // OPTIONAL: Home Z axis
+#elif N_AXIS == 5 // 5 axis : homing
+  #define HOMING_CYCLE_0 (1<<AXIS_4) // Home 4th axis (A)
+  #define HOMING_CYCLE_1 (1<<AXIS_5) // Home 5th axis (B)
+  #define HOMING_CYCLE_2 (1<<AXIS_1) // Home X axis
+  #define HOMING_CYCLE_3 (1<<AXIS_2) // Home Y axis
+  #define HOMING_CYCLE_4 (1<<AXIS_3) // OPTIONAL: Home Z axis
+#elif N_AXIS == 6 // 6 axis : homing
+  #define HOMING_CYCLE_0 (1<<AXIS_4) // Home 4th axis (A)
+  #define HOMING_CYCLE_1 (1<<AXIS_5) // Home 5th axis (B)
+  #define HOMING_CYCLE_2 (1<<AXIS_6) // Home 6th axis (C)
+  #define HOMING_CYCLE_3 (1<<AXIS_1) // Home X axis
+  #define HOMING_CYCLE_4 (1<<AXIS_2) // Home Y axis
+  #define HOMING_CYCLE_5 (1<<AXIS_3) // OPTIONAL: Home Z axis
+#else // Classic 3 axis
   #define HOMING_CYCLE_0 (1<<AXIS_3)                // REQUIRED: First move Z to clear workspace.
   #define HOMING_CYCLE_1 ((1<<AXIS_1)|(1<<AXIS_2))  // OPTIONAL: Then move X,Y at the same time.
-  // #define HOMING_CYCLE_2                         // OPTIONAL: Uncomment and add axes mask to enable
-#endif // DEFAULTS_RAMPS_BOARD
+//  #define HOMING_CYCLE_2 (1<<AXIS_3) // OPTIONAL: Home Z axis
+#endif
+
 
 // NOTE: The following are two examples to setup homing for 2-axis machines.
 // #define HOMING_CYCLE_0 ((1<<AXIS_1)|(1<<AXIS_2))  // NOT COMPATIBLE WITH COREXY: Homes both X-Y in one cycle.
@@ -261,13 +251,10 @@ typedef enum {
 // will be applied to all of them. This is useful when a user has a mixed set of limit pins with both
 // normally-open(NO) and normally-closed(NC) switches installed on their machine.
 // NOTE: PLEASE DO NOT USE THIS, unless you have a situation that needs it.
-// #define INVERT_LIMIT_PIN_MASK ((1<<X_LIMIT_BIT)|(1<<Y_LIMIT_BIT)) // Default disabled. Uncomment to enable.
-#ifdef DEFAULTS_RAMPS_BOARD
-  // Only enable the following line if you have - (min) limit switches attached
-  //#define INVERT_MIN_LIMIT_PIN_MASK ((1<<AXIS_1) | (1<<AXIS_2) | (1<<AXIS_3))
-  // Only enable the following line if you have + (max) limit switches attached
-  //#define INVERT_MAX_LIMIT_PIN_MASK ((1<<AXIS_1) | (1<<AXIS_2) | (1<<AXIS_3))
-#endif
+// Only enable the following line if you have - (min) limit switches attached
+//#define INVERT_MIN_LIMIT_PIN_MASK ((1<<AXIS_1) | (1<<AXIS_2) | (1<<AXIS_3))
+// Only enable the following line if you have + (max) limit switches attached
+//#define INVERT_MAX_LIMIT_PIN_MASK ((1<<AXIS_1) | (1<<AXIS_2) | (1<<AXIS_3))
 
 // Inverts the spindle enable pin from low-disabled/high-enabled to low-enabled/high-disabled. Useful
 // for some pre-built electronic boards.

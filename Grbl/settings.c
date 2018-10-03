@@ -334,54 +334,41 @@ void settings_init() {
 // Returns step pin mask according to Grbl internal axis indexing.
 uint8_t get_step_pin_mask(uint8_t axis_idx)
 {
-  #ifdef DEFAULTS_RAMPS_BOARD
-    if ( axis_idx == AXIS_1 ) { return((1<<AXIS_1)); }
-    if ( axis_idx == AXIS_2 ) { return((1<<AXIS_2)); }
-    #if N_AXIS > 3
-      if ( axis_idx == AXIS_4 ) { return((1<<AXIS_4)); }
-    #endif
-    #if N_AXIS > 4
-      if ( axis_idx == AXIS_5 ) { return((1<<AXIS_5)); }
-    #endif
-    #if N_AXIS > 5
-      if ( axis_idx == AXIS_6 ) { return((1<<AXIS_6)); }
-    #endif
-    return((1<<AXIS_3));
-  #else
-    if ( axis_idx == AXIS_1 ) { return((1<<AXIS_1)); }
-    if ( axis_idx == AXIS_2 ) { return((1<<AXIS_2)); }
-    return((1<<Z_STEP_BIT));
-  #endif // DEFAULTS_RAMPS_BOARD
+  if ( axis_idx == AXIS_1 ) { return((1<<AXIS_1)); }
+  if ( axis_idx == AXIS_2 ) { return((1<<AXIS_2)); }
+  #if N_AXIS > 3
+    if ( axis_idx == AXIS_4 ) { return((1<<AXIS_4)); }
+  #endif
+  #if N_AXIS > 4
+    if ( axis_idx == AXIS_5 ) { return((1<<AXIS_5)); }
+  #endif
+  #if N_AXIS > 5
+    if ( axis_idx == AXIS_6 ) { return((1<<AXIS_6)); }
+  #endif
+  return((1<<AXIS_3));
 }
 
 
 // Returns direction pin mask according to Grbl internal axis indexing.
 uint8_t get_direction_pin_mask(uint8_t axis_idx)
 {
-  #ifdef DEFAULTS_RAMPS_BOARD
-    if ( axis_idx == AXIS_1 ) { return((1<<AXIS_1)); }
-    if ( axis_idx == AXIS_2 ) { return((1<<AXIS_2)); }
-    #if N_AXIS > 3
-      if ( axis_idx == AXIS_4 ) { return((1<<AXIS_4)); }
-    #endif
-    #if N_AXIS > 4
-      if ( axis_idx == AXIS_5 ) { return((1<<AXIS_5)); }
-    #endif
-    #if N_AXIS > 5
-      if ( axis_idx == AXIS_6 ) { return((1<<AXIS_6)); }
-    #endif
-    return((1<<AXIS_3));
-  #else
-    if ( axis_idx == AXIS_1 ) { return((1<<AXIS_1)); }
-    if ( axis_idx == AXIS_2 ) { return((1<<AXIS_1)); }
-    return((1<<Z_DIRECTION_BIT));
-  #endif // DEFAULTS_RAMPS_BOARD
+  if ( axis_idx == AXIS_1 ) { return((1<<AXIS_1)); }
+  if ( axis_idx == AXIS_2 ) { return((1<<AXIS_2)); }
+  #if N_AXIS > 3
+    if ( axis_idx == AXIS_4 ) { return((1<<AXIS_4)); }
+  #endif
+  #if N_AXIS > 4
+    if ( axis_idx == AXIS_5 ) { return((1<<AXIS_5)); }
+  #endif
+  #if N_AXIS > 5
+    if ( axis_idx == AXIS_6 ) { return((1<<AXIS_6)); }
+  #endif
+  return((1<<AXIS_3));
 }
 
 
 // Returns limit pin mask according to Grbl internal axis indexing.
 //
-//#ifdef DEFAULTS_RAMPS_BOARD
 //  uint8_t get_min_limit_pin_mask(uint8_t axis_idx)
 //  {
 //    if ( axis_idx == AXIS_1 ) { return((1<<MIN_LIMIT_BIT(AXIS_1))); }
@@ -413,12 +400,4 @@ uint8_t get_direction_pin_mask(uint8_t axis_idx)
 //    #endif
 //     return((1<<MAX_LIMIT_BIT(AXIS_3)));
 //  }
-//#else
-//  uint8_t get_limit_pin_mask(uint8_t axis_idx)
-//  {
-//    if ( axis_idx == AXIS_1 ) { return((1<<X_LIMIT_BIT)); }
-//    if ( axis_idx == AXIS_2 ) { return((1<<Y_LIMIT_BIT)); }
-//    return((1<<Z_LIMIT_BIT));
-//  }
-//#endif //DEFAULTS_RAMPS_BOARD
 
