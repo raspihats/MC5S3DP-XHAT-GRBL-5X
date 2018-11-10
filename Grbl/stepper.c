@@ -259,7 +259,7 @@ void st_wake_up()
 {
 
   // Enable stepper drivers.
-  bool pin_state = bit_isfalse(settings.flags, BITFLAG_INVERT_ST_ENABLE);
+  bool pin_state = bit_istrue(settings.flags, BITFLAG_INVERT_ST_ENABLE);
   for (uint32_t idx = 0; idx < N_AXIS; idx++) {
     LL_GPIO_WriteOutputPin(steppers[idx].enable.port, steppers[idx].enable.pin, pin_state);
   }

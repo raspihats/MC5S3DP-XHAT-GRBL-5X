@@ -454,24 +454,23 @@
 #endif
 
 #ifdef DEFAULTS_RAMPS_BOARD
-  #define MICROSTEPS_XY 16.0
-  #define STEP_REVS_XY 200.0
-  #define MM_PER_REV_XY (2.0*20.0) // 2mm belt pitch, 20 pulley teeth, CORE_XY
-  #define MICROSTEPS_Z 2
-  #define STEP_REVS_Z 200
-  #define MM_PER_REV_Z 2.117 // ACME 3/8-12 Leadscrew
-  #define DEFAULT_AXIS1_STEPS_PER_UNIT (MICROSTEPS_XY*STEP_REVS_XY/MM_PER_REV_XY)
-  #define DEFAULT_AXIS2_STEPS_PER_UNIT (MICROSTEPS_XY*STEP_REVS_XY/MM_PER_REV_XY)
-  #define DEFAULT_AXIS3_STEPS_PER_UNIT (MICROSTEPS_Z*STEP_REVS_Z/MM_PER_REV_Z)
+  #define MICROSTEPS_XY 8.0
+  #define STEPS_PER_REV_XY 200.0
+  #define MM_PER_REV_XY (2.0 * 20.0) // 2mm belt pitch, 20 pulley teeth, CORE_XY
+  #define MICROSTEPS_Z 16.0
+  #define STEPS_PER_REV_Z 200.0
+  #define DEFAULT_AXIS1_STEPS_PER_UNIT (MICROSTEPS_XY * STEPS_PER_REV_XY / MM_PER_REV_XY)
+  #define DEFAULT_AXIS2_STEPS_PER_UNIT (MICROSTEPS_XY * STEPS_PER_REV_XY / MM_PER_REV_XY)
+  #define DEFAULT_AXIS3_STEPS_PER_UNIT (MICROSTEPS_Z * STEPS_PER_REV_Z / 360) // 360°
   #define DEFAULT_AXIS1_MAX_RATE 50000.0 // 9000 mm/min = 9000/60 = 150 mm/sec
   #define DEFAULT_AXIS2_MAX_RATE 50000.0 // 9000 mm/min = 9000/60 = 150 mm/sec
   #define DEFAULT_AXIS3_MAX_RATE 300.0  //  300 mm/min =  300/60 =   5 mm/sec
-  #define DEFAULT_AXIS1_ACCELERATION (600.0*60*60) // 300*60*60 mm/min^2 = 300 mm/sec^2
-  #define DEFAULT_AXIS2_ACCELERATION (600.0*60*60) // 300*60*60 mm/min^2 = 300 mm/sec^2
-  #define DEFAULT_AXIS3_ACCELERATION (100.0*60*60) // 100*60*60 mm/min^2 = 100 mm/sec^2
+  #define DEFAULT_AXIS1_ACCELERATION (600.0 * 60 * 60) // 300*60*60 mm/min^2 = 300 mm/sec^2
+  #define DEFAULT_AXIS2_ACCELERATION (600.0 * 60 * 60) // 300*60*60 mm/min^2 = 300 mm/sec^2
+  #define DEFAULT_AXIS3_ACCELERATION (100.0 * 60 * 60) // 100*60*60 mm/min^2 = 100 mm/sec^2
   #define DEFAULT_AXIS1_MAX_TRAVEL 500.0 // mm
   #define DEFAULT_AXIS2_MAX_TRAVEL 500.0 // mm
-  #define DEFAULT_AXIS3_MAX_TRAVEL 200.0 // mm
+  #define DEFAULT_AXIS3_MAX_TRAVEL 90.0 // °
   #if N_AXIS > 3
     #define DEFAULT_AXIS4_STEPS_PER_UNIT 8.888889 // Direct drive : (200 pas par tours * 1/16 microsteps)/360°
     #define DEFAULT_AXIS4_MAX_RATE 1440 // °/mn
@@ -500,7 +499,7 @@
   #define DEFAULT_JUNCTION_DEVIATION 0.02 // mm
   #define DEFAULT_ARC_TOLERANCE 0.002 // mm
   #define DEFAULT_REPORT_INCHES 0 // false
-  #define DEFAULT_INVERT_ST_ENABLE 1 // false
+  #define DEFAULT_INVERT_ST_ENABLE 0 // false
   #define DEFAULT_INVERT_LIMIT_PINS 0 // false
   #define DEFAULT_SOFT_LIMIT_ENABLE 1 // true
   #define DEFAULT_HARD_LIMIT_ENABLE 0  // false
