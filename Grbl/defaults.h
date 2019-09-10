@@ -457,14 +457,14 @@
   #define MICROSTEPS_XY 8.0
   #define STEPS_PER_REV_XY 200.0
   #define MM_PER_REV_XY (2.0 * 20.0) // 2mm belt pitch, 20 pulley teeth, CORE_XY
-  #define MICROSTEPS_Z 16.0
+  #define MICROSTEPS_Z 8.0
   #define STEPS_PER_REV_Z 200.0
   #define DEFAULT_AXIS1_STEPS_PER_UNIT (MICROSTEPS_XY * STEPS_PER_REV_XY / MM_PER_REV_XY)
   #define DEFAULT_AXIS2_STEPS_PER_UNIT (MICROSTEPS_XY * STEPS_PER_REV_XY / MM_PER_REV_XY)
   #define DEFAULT_AXIS3_STEPS_PER_UNIT (MICROSTEPS_Z * STEPS_PER_REV_Z / 360) // 360°
   #define DEFAULT_AXIS1_MAX_RATE 50000.0 // 9000 mm/min = 9000/60 = 150 mm/sec
   #define DEFAULT_AXIS2_MAX_RATE 50000.0 // 9000 mm/min = 9000/60 = 150 mm/sec
-  #define DEFAULT_AXIS3_MAX_RATE 300.0  //  300 mm/min =  300/60 =   5 mm/sec
+  #define DEFAULT_AXIS3_MAX_RATE 50000.0  //  300 mm/min =  300/60 =   5 mm/sec
   #define DEFAULT_AXIS1_ACCELERATION (600.0 * 60 * 60) // 300*60*60 mm/min^2 = 300 mm/sec^2
   #define DEFAULT_AXIS2_ACCELERATION (600.0 * 60 * 60) // 300*60*60 mm/min^2 = 300 mm/sec^2
   #define DEFAULT_AXIS3_ACCELERATION (100.0 * 60 * 60) // 100*60*60 mm/min^2 = 100 mm/sec^2
@@ -473,15 +473,15 @@
   #define DEFAULT_AXIS3_MAX_TRAVEL 90.0 // °
   #if N_AXIS > 3
     #define DEFAULT_AXIS4_STEPS_PER_UNIT 8.888889 // Direct drive : (200 pas par tours * 1/16 microsteps)/360°
-    #define DEFAULT_AXIS4_MAX_RATE 1440 // °/mn
+    #define DEFAULT_AXIS4_MAX_RATE 50000.0 // °/mn
     #define DEFAULT_AXIS4_ACCELERATION (100.0*60*60) // 100*60*60 mm/min^2 = 100 mm/sec^2
     #define DEFAULT_AXIS4_MAX_TRAVEL 360.0 // °
   #endif
   #if N_AXIS > 4
     #define DEFAULT_AXIS5_STEPS_PER_UNIT 8.888889 // Direct drive : (200 pas par tours * 1/16 microsteps)/360°
-    #define DEFAULT_AXIS5_MAX_RATE 1440 // °/mn
+    #define DEFAULT_AXIS5_MAX_RATE 50000.0 // °/mn
     #define DEFAULT_AXIS5_ACCELERATION (100.0*60*60) // 100*60*60 mm/min^2 = 100 mm/sec^2
-    #define DEFAULT_AXIS5_MAX_TRAVEL 180.0 // °
+    #define DEFAULT_AXIS5_MAX_TRAVEL 360.0 // °
   #endif
   #if N_AXIS > 5
     #define DEFAULT_AXIS6_STEPS_PER_UNIT 8.888889 // Direct drive : (200 pas par tours * 1/16 microsteps)/360°
