@@ -119,7 +119,7 @@ int main(void)
   MX_TIM11_Init();
   /* USER CODE BEGIN 2 */
   LL_SYSTICK_EnableIT(); // 1 ms tick interrupt, drives sys_tick_ms.
-  eeprom_init();         // Flash EEPROM emulation, loaded into RAM.
+  eeprom_init();         // EEPROM emulation (internal flash), loaded into RAM.
 
   // Initialize system upon power-up.
   serial_init();   // Setup serial baud rate and interrupts

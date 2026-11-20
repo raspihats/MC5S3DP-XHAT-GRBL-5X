@@ -8,7 +8,8 @@ axis support) from the Arduino Mega2560 to the **STM32F411RCT6** (LQFP64,
 - 5 axes: X, Y, Z (linear) and A, B (rotary)
 - 25 MHz crystal, 100 MHz system clock
 - Serial: USART1 at 115200 baud, 8N1
-- Settings are stored in flash (sectors 2 and 3) through EEPROM emulation
+- Settings are stored with EEPROM emulation in the STM32's internal flash (sectors 2 and 3).
+  The board has no EEPROM chip; "EEPROM" in the Grbl code refers to this emulation.
 
 ## Building and flashing
 
@@ -21,10 +22,10 @@ make stflash    # program through ST-Link with st-flash
 make clean
 ```
 
-Flash the `.hex` or `.elf`, not the `.bin`: the `.bin` covers the settings sectors
+Flash the `.hex` or `.elf`, not the `.bin`: the `.bin` covers the EEPROM emulation sectors
 (`0x08008000`-`0x0800FFFF`) with padding and would erase the stored `$` settings.
 
-Flash layout: vector table at `0x08000000`, settings at `0x08008000`, code at `0x08010000`.
+Flash layout: vector table at `0x08000000`, EEPROM emulation at `0x08008000`, code at `0x08010000`.
 
 ## Pin map
 

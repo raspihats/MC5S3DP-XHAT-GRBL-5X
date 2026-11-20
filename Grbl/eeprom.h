@@ -21,7 +21,7 @@
 #ifndef eeprom_h
 #define eeprom_h
 
-// Initializes flash EEPROM emulation and loads stored values into RAM.
+// Initializes the EEPROM emulation (internal flash) and loads stored values into RAM.
 void eeprom_init();
 
 // Writes changed values to flash when the machine is idle and the serial line is quiet.

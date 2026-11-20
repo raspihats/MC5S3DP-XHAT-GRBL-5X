@@ -1,6 +1,10 @@
 /*
-  eeprom.c - Grbl EEPROM API, backed by a RAM copy of the STM32 flash EEPROM emulation
+  eeprom.c - Grbl EEPROM API, backed by a RAM copy of the EEPROM emulation
   Part of Grbl
+
+  The board has no EEPROM chip. Grbl's EEPROM functions (eeprom_get_char() etc.,
+  names kept from upstream Grbl) are served by ST's EEPROM emulation
+  (Src/eeprom_emulation.c), which stores the bytes in internal flash sectors 2-3.
 
   Grbl is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -38,7 +42,7 @@ static uint8_t ee_dirty = 0;           // ee_ram may differ from ee_flash.
 static uint32_t ee_retry_ms = 0;       // Earliest time to retry after a failed flush.
 
 
-// Initializes the flash emulation and loads every stored byte into RAM.
+// Initializes the EEPROM emulation and loads every stored byte into RAM.
 // Must be called before any other eeprom_* function.
 void eeprom_init()
 {
