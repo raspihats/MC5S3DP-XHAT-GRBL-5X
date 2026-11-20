@@ -21,6 +21,13 @@
 #ifndef eeprom_h
 #define eeprom_h
 
+// Initializes flash EEPROM emulation and loads stored values into RAM.
+void eeprom_init();
+
+// Writes changed values to flash when the machine is idle and the serial line is quiet.
+// Call regularly from the main loop, only between lines.
+void eeprom_service();
+
 unsigned char eeprom_get_char(unsigned int addr);
 void eeprom_put_char(unsigned int addr, unsigned char new_value);
 void memcpy_to_eeprom_with_checksum(unsigned int destination, char *source, unsigned int size);

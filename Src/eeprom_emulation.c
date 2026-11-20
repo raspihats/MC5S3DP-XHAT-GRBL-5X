@@ -24,6 +24,7 @@
   */ 
 
 /* Includes ------------------------------------------------------------------*/
+#include <string.h>
 #include "eeprom_emulation.h"
 
 /* Private typedef -----------------------------------------------------------*/
@@ -613,6 +614,48 @@ static uint16_t EE_PageTransfer(uint16_t VirtAddress, uint16_t Data)
 
   /* Return last operation flash status */
   return FlashStatus;
+}
+
+/**
+  * @brief  Reads the latest value of every variable in a single pass over the
+  *   valid page. Much faster than calling EE_ReadVariable() for each address,
+  *   which scans the whole page backwards once per variable.
+  * @param  Buffer: destination, indexed by virtual address. Addresses that were
+  *   never written read as 0xFF (like an erased AVR EEPROM).
+  * @param  Size: number of bytes in Buffer. Variables at or above it are ignored.
+  * @retval None
+  */
+void EE_ReadAll(uint8_t* Buffer, uint16_t Size)
+{
+  uint16_t ValidPage;
+  uint32_t Address, PageEndAddress;
+
+  memset(Buffer, 0xFF, Size);
+
+  ValidPage = EE_FindValidPage(READ_FROM_VALID_PAGE);
+  if (ValidPage == NO_VALID_PAGE)
+  {
+    return;
+  }
+
+  /* Records are written in order, so later records override earlier ones.
+     The first 4 bytes of the page hold the page status. */
+  Address = (uint32_t)(EEPROM_START_ADDRESS + (uint32_t)(ValidPage * PAGE_SIZE)) + 4;
+  PageEndAddress = (uint32_t)(EEPROM_START_ADDRESS + (uint32_t)((1 + ValidPage) * PAGE_SIZE));
+
+  for (; Address < PageEndAddress; Address += 4)
+  {
+    uint32_t Record = (*(__IO uint32_t*)Address);
+    if (Record == 0xFFFFFFFF)
+    {
+      break; /* First free slot: end of written records */
+    }
+    uint16_t VirtAddress = (uint16_t)(Record >> 16);
+    if (VirtAddress < Size) /* also skips a record whose address write was interrupted (0xFFFF) */
+    {
+      Buffer[VirtAddress] = (uint8_t)(Record & 0xFFFF);
+    }
+  }
 }
 
 /**

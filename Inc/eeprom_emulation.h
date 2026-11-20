@@ -78,6 +78,7 @@
 uint16_t EE_Init(void);
 uint16_t EE_ReadVariable(uint16_t VirtAddress, uint16_t* Data);
 uint16_t EE_WriteVariable(uint16_t VirtAddress, uint16_t Data);
+void EE_ReadAll(uint8_t* Buffer, uint16_t Size);
 
 #endif /* __EEPROM_H */
 

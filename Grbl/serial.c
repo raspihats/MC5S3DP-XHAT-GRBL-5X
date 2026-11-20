@@ -25,13 +25,16 @@
 #define RX_RING_BUFFER (RX_BUFFER_SIZE+1)
 #define TX_RING_BUFFER (TX_BUFFER_SIZE+1)
 
-uint8_t serial_rx_buffer[RX_RING_BUFFER];
-uint8_t serial_rx_buffer_head = 0;
+// Head/tail indices are shared between the main loop and the USART ISR, so all are volatile.
+volatile uint8_t serial_rx_buffer[RX_RING_BUFFER];
+volatile uint8_t serial_rx_buffer_head = 0;
 volatile uint8_t serial_rx_buffer_tail = 0;
 
 uint8_t serial_tx_buffer[TX_RING_BUFFER];
-uint8_t serial_tx_buffer_head = 0;
+volatile uint8_t serial_tx_buffer_head = 0;
 volatile uint8_t serial_tx_buffer_tail = 0;
+
+volatile uint32_t serial_rx_last_line_ms = 0;
 
 
 // Returns the number of bytes available in the RX serial buffer.
@@ -199,10 +202,16 @@ void ISR_SERIAL_RXNE(void)
         next_head = serial_rx_buffer_head + 1;
         if (next_head == RX_RING_BUFFER) { next_head = 0; }
 
+        serial_rx_last_line_ms = sys_tick_ms;
+
         // Write data to buffer unless it is full.
         if (next_head != serial_rx_buffer_tail) {
           serial_rx_buffer[serial_rx_buffer_head] = data;
           serial_rx_buffer_head = next_head;
+        } else {
+          // Byte dropped: the line it belongs to is corrupt. Raise an alarm instead of
+          // failing silently. (Ported from grbl-Mega-5X upstream 8864f2d.)
+          system_set_exec_alarm(EXEC_ALARM_SERIAL_RX_OVERFLOW);
         }
       }
   }

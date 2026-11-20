@@ -71,11 +71,18 @@ void protocol_main_loop()
   uint8_t line_flags = 0;
   uint8_t char_counter = 0;
   uint8_t c;
+  uint8_t prev_c = 0;
   for (;;) {
 
     // Process one line of incoming serial data, as the data becomes available. Performs an
     // initial filtering by removing spaces and comments and capitalizing all letters.
     while((c = serial_read()) != SERIAL_NO_DATA) {
+      // A LF right after a CR is the second half of a CRLF line ending. The line was already
+      // executed on the CR, so drop the LF instead of answering an extra 'ok' for an empty
+      // line, which desyncs character-counting senders. (Same intent as upstream 22e19aa.)
+      if ((c == '\n') && (prev_c == '\r')) { prev_c = c; continue; }
+      prev_c = c;
+
       if ((c == '\n') || (c == '\r')) { // End of line reached
 
         protocol_execute_realtime(); // Runtime command check point.
@@ -158,7 +165,10 @@ void protocol_main_loop()
 
     protocol_execute_realtime();  // Runtime command check point.
     if (sys.abort) { return; } // Bail to main() program loop to reset system.
-              
+
+    // Write changed settings to flash, only between lines (no partial line in progress).
+    if ((char_counter == 0) && (line_flags == 0)) { eeprom_service(); }
+
     #ifdef SLEEP_ENABLE
       // Check for sleep conditions and execute auto-park, if timeout duration elapses.
       sleep_check();    

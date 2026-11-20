@@ -65,6 +65,9 @@ uint8_t read_float(char *line, uint8_t *char_counter, float *float_ptr);
 // Non-blocking delay function used for general operation and suspend features.
 void delay_sec(float seconds, uint8_t mode);
 
+// Free-running millisecond counter, incremented by SysTick_Handler.
+extern volatile uint32_t sys_tick_ms;
+
 // Delays variable-defined milliseconds. Compiler compatibility fix for _delay_ms().
 void delay_ms(uint16_t ms);
 

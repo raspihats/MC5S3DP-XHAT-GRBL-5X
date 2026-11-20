@@ -32,6 +32,9 @@
 
 #define SERIAL_NO_DATA 0xff
 
+// sys_tick_ms value when the last line (non-realtime) character was received.
+extern volatile uint32_t serial_rx_last_line_ms;
+
 
 void serial_init();
 

@@ -47,6 +47,8 @@
 #define EXEC_ALARM_HOMING_FAIL_DOOR     7
 #define EXEC_ALARM_HOMING_FAIL_PULLOFF  8
 #define EXEC_ALARM_HOMING_FAIL_APPROACH 9
+// 10 is EXEC_ALARM_HOMING_FAIL_TRAVEL upstream (not in this port); keep numbering compatible.
+#define EXEC_ALARM_SERIAL_RX_OVERFLOW   11
 
 // Override bit maps. Realtime bitflags to control feed, rapid, spindle, and coolant overrides.
 // Spindle/coolant and feed/rapids are separated into two controlling flag variables.
