@@ -27,6 +27,30 @@ Flash the `.hex` or `.elf`, not the `.bin`: the `.bin` covers the EEPROM emulati
 
 Flash layout: vector table at `0x08000000`, EEPROM emulation at `0x08008000`, code at `0x08010000`.
 
+## Notes on this port
+
+- **Settings and the serial port.** The STM32F411 has a single flash bank: while the EEPROM
+  emulation writes or erases flash, the CPU and all interrupts stall (a sector erase takes
+  ~250-500 ms), and incoming serial bytes are lost. To avoid that, settings are kept in RAM
+  (`Grbl/eeprom.c`): `$` commands, `G10`, `G28.1`, etc. only change RAM, and changed bytes are
+  written to flash later, once the machine is idle and no G-code line has arrived for 500 ms.
+  Unchanged bytes are never rewritten. A setting changed less than ~0.5 s before power is cut is
+  not saved.
+- **Ported from upstream grbl-Mega-5X:** `volatile` serial buffer indices, `ALARM:11` on serial
+  receive buffer overflow, and a single `ok` for lines ending in CR+LF.
+- **Delays.** `delay_ms()` busy-waits on the DWT cycle counter, so `G4` dwell, homing debounce
+  (`$26`) and the safety door delays wait as intended. The stepper idle lock time (`$1`) is counted
+  down in the 1 ms SysTick interrupt instead of blocking the stepper interrupt.
+- **Interrupts.** All interrupts (USART1, TIM10/TIM11 steppers, SysTick) run at the same priority
+  and do not preempt each other, so no interrupt handler may block for long.
+
+## grblHAL
+
+The board is also supported by [grblHAL](https://github.com/grblHAL): see the `mc5s3dp-xhat` branch
+of [raspihats/grblHAL-STM32F4xx](https://github.com/raspihats/grblHAL-STM32F4xx/tree/mc5s3dp-xhat)
+and its `MC5S3DP-XHAT.md` for build instructions and the differences from this firmware.
+It uses the same pin assignments as listed below.
+
 ## Pin map
 
 The CubeMX project (`MC5S3DP-XHAT-GRBL-5X.ioc`) and `Inc/main.h` name every pin;
