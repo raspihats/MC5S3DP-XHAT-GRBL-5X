@@ -1,3 +1,109 @@
+# MC5S3DP-XHAT-GRBL-5X
+
+Firmware for the **MC5S3DP-XHAT** 5-axis motion control board. It is a port of
+[grbl-Mega-5X](https://github.com/fra589/grbl-Mega-5X) (Grbl v1.1f with 4th and 5th
+axis support) from the Arduino Mega2560 to the **STM32F411RCT6** (LQFP64,
+256 KB flash, 128 KB RAM), using the STM32 LL drivers.
+
+- 5 axes: X, Y, Z (linear) and A, B (rotary)
+- 25 MHz crystal, 100 MHz system clock
+- Serial: USART1 at 115200 baud, 8N1
+- Settings are stored in flash (sectors 2 and 3) through EEPROM emulation
+
+## Building and flashing
+
+Requires `arm-none-eabi-gcc` (tested with 10.3-2021.07).
+
+```sh
+make            # build/grbl.elf, grbl.hex, grbl.bin, grbl.map
+make flash      # program through ST-Link with OpenOCD
+make stflash    # program through ST-Link with st-flash
+make clean
+```
+
+Flash the `.hex` or `.elf`, not the `.bin`: the `.bin` covers the settings sectors
+(`0x08008000`-`0x0800FFFF`) with padding and would erase the stored `$` settings.
+
+Flash layout: vector table at `0x08000000`, settings at `0x08008000`, code at `0x08010000`.
+
+## Pin map
+
+The CubeMX project (`MC5S3DP-XHAT-GRBL-5X.ioc`) and `Inc/main.h` name every pin;
+`Grbl/cpu_map.h` assigns those names to Grbl functions.
+
+### Stepper drivers
+
+| Axis | Step | Direction | Enable |
+|------|------|-----------|--------|
+| X | PC14 `X_STP` | PC15 `X_DIR` | PC13 `X_EN` |
+| Y | PA4 `Y_STP` | PA6 `Y_DIR` | PA3 `Y_EN` |
+| Z | PC4 `Z_STP` | PC5 `Z_DIR` | PA7 `Z_EN` |
+| A (4th) | PB1 `A_STP` | PB2 `A_DIR` | PB0 `A_EN` |
+| B (5th) | PB12 `B_STP` | PB15 `B_DIR` | PB10 `B_EN` |
+
+Enable outputs are active low by default (invert with `$4`).
+
+### Limit switches
+
+| Axis | Min | Max |
+|------|-----|-----|
+| X | PC12 `X_MIN` | PB7 `X_MAX` |
+| Y | PD2 `Y_MIN` | PB8 `Y_MAX` |
+| Z | PB3 `Z_MIN` | PB9 `Z_MAX` |
+| A | PB4 `A_MIN` | PC0 `A_MAX` |
+| B | PB6 `B_MIN` | PC1 `B_MAX` |
+
+All limit inputs have internal pull-ups (switch to GND). Hard limits are disabled in
+this build (`DISABLE_HW_LIMITS` in `Grbl/cpu_map.h`); the switches are used for homing.
+
+### Digital inputs
+
+| Pin | Net | Function |
+|-----|-----|----------|
+| PB13 | `DI_0` | Reset |
+| PB14 | `DI_1` | Feed hold |
+| PA15 | `DI_2` | Cycle start |
+| PC10 | `DI_3` | Safety door |
+| PC11 | `DI_4` | Probe |
+
+All with internal pull-ups.
+
+### Digital outputs
+
+| Pin | Net | Function |
+|-----|-----|----------|
+| PA11 | `DQ_0` | Coolant flood (M8) |
+| PA8 | `DQ_1` | Coolant mist (M7) |
+| PC9 | `DQ_2` | Spindle PWM: TIM3_CH4, 24.4 kHz, 12-bit (0-4095) |
+| PC8 | `DQ_3` | Spindle enable |
+| PC7 | `DQ_4` | Spindle direction |
+| PC6 | `DQ_5` | Not used |
+
+### Communication and system
+
+| Pin | Function |
+|-----|----------|
+| PA9 | USART1 TX |
+| PA10 | USART1 RX |
+| PA13 | SWDIO |
+| PA14 | SWCLK |
+| PH0 / PH1 | 25 MHz HSE crystal |
+
+### Board pins not used by this firmware
+
+| Pin | Net | Configured as |
+|-----|-----|---------------|
+| PA0 | `THERM_0` | ADC1_IN0 (initialized, never read) |
+| PA1 | `THERM_1` | ADC1_IN1 (initialized, never read) |
+| PA2 | `THERM_2` | ADC1_IN2 (initialized, never read) |
+| PA5 | `FAULT` | Input |
+| PA12 | `ST_LED` | Output (status LED) |
+| PC6 | `DQ_5` | Output |
+
+---
+
+# Upstream grbl-Mega-5X README
+
 ![GitHub Logo](https://github.com/fra589/grbl-Mega-5X/blob/edge/doc/images/Mega-5X-logo.svg)
 
 ***
