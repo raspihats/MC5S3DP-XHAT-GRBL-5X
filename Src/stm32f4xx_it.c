@@ -38,7 +38,6 @@
 #include "serial.h"
 #include "stepper.h"
 
-uint32_t millisec_counter;
 volatile uint32_t sys_tick_ms; // Free-running millisecond counter (wraps after ~49 days).
 
 /* USER CODE END 0 */
@@ -180,9 +179,7 @@ void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
   sys_tick_ms++;
-  if(millisec_counter > 0) {
-    millisec_counter--;
-  }
+  st_idle_lock_tick();
   /* USER CODE END SysTick_IRQn 0 */
   
   /* USER CODE BEGIN SysTick_IRQn 1 */

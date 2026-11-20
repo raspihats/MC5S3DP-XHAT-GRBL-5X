@@ -35,6 +35,9 @@ void st_wake_up();
 // Immediately disables steppers
 void st_go_idle();
 
+// 1 ms tick from SysTick: disables the drivers once st_go_idle()'s idle lock time ($1) runs out.
+void st_idle_lock_tick();
+
 // Generate the step and direction port invert masks.
 void st_generate_step_dir_invert_masks();
 

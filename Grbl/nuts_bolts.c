@@ -129,11 +129,18 @@ void delay_sec(float seconds, uint8_t mode)
 
 // Delays variable defined milliseconds. Compiler compatibility fix for _delay_ms(),
 // which only accepts constants in future compiler releases.
+// Busy-waits on the Cortex-M4 DWT cycle counter, so it does not depend on any interrupt.
+// NOTE: Main-loop use only. All interrupts share one priority level, so calling this from an
+// ISR would block the USART interrupt for the whole delay and drop received bytes.
 void delay_ms(uint16_t ms)
 {
-  extern uint32_t millisec_counter;
-  millisec_counter = ms;
-  while ( millisec_counter-- );
+  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk; // Enable DWT (idempotent).
+  DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;            // Start the cycle counter (idempotent).
+  const uint32_t cycles_per_ms = SystemCoreClock / 1000;
+  while (ms--) {
+    uint32_t start = DWT->CYCCNT;
+    while ((uint32_t)(DWT->CYCCNT - start) < cycles_per_ms) { }
+  }
 }
 
 

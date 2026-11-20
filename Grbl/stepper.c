@@ -175,6 +175,20 @@ static uint8_t dir_port_invert_mask;
 // Used to avoid ISR nesting of the "Stepper Driver Interrupt". Should never occur though.
 static volatile uint8_t busy;
 
+// Milliseconds left until st_go_idle()'s deferred driver disable, counted down by
+// st_idle_lock_tick() from SysTick. 0 = nothing pending.
+static volatile uint32_t st_disable_countdown_ms = 0;
+
+// Writes all stepper driver enable pins, applying the $4 invert setting.
+static void st_set_drivers_enabled(bool enabled)
+{
+  bool pin_state = !enabled; // Enable pins are active low before inversion.
+  if (bit_istrue(settings.flags, BITFLAG_INVERT_ST_ENABLE)) { pin_state = !pin_state; }
+  for (uint32_t idx = 0; idx < N_AXIS; idx++) {
+    LL_GPIO_WriteOutputPin(steppers[idx].enable.port, steppers[idx].enable.pin, pin_state);
+  }
+}
+
 // Pointers for the step segment being prepped from the planner buffer. Accessed only by the
 // main program. Pointers may be planning segments or planner blocks ahead of what being executed.
 static plan_block_t *pl_block;     // Pointer to the planner block being prepped
@@ -258,11 +272,9 @@ static st_prep_t prep;
 void st_wake_up()
 {
 
-  // Enable stepper drivers.
-  bool pin_state = bit_istrue(settings.flags, BITFLAG_INVERT_ST_ENABLE);
-  for (uint32_t idx = 0; idx < N_AXIS; idx++) {
-    LL_GPIO_WriteOutputPin(steppers[idx].enable.port, steppers[idx].enable.pin, pin_state);
-  }
+  // Enable stepper drivers. Cancel any pending idle disable first, so it cannot fire after this.
+  st_disable_countdown_ms = 0;
+  st_set_drivers_enabled(true);
 
   // Initialize stepper output bits to ensure first ISR call does not step.
   st.step_outbits = step_port_invert_mask;
@@ -301,22 +313,32 @@ void st_go_idle()
   busy = false;
 
   // Set stepper driver idle state, disabled or enabled, depending on settings and circumstances.
-  bool pin_state = false; // Keep enabled.
+  st_disable_countdown_ms = 0; // Cancel any previously scheduled disable.
   if (((settings.stepper_idle_lock_time != 0xff) || sys_rt_exec_alarm || sys.state == STATE_SLEEP) && sys.state != STATE_HOMING) {
-    // Force stepper dwell to lock axes for a defined amount of time to ensure the axes come to a complete
-    // stop and not drift from residual inertial forces at the end of the last movement.
-    delay_ms(settings.stepper_idle_lock_time);
-    pin_state = true; // Override. Disable steppers.
+    // Keep the axes locked for $1 ms so they come to a complete stop and do not drift from
+    // residual inertia, then disable the drivers. On AVR this was a delay_ms() here, but this
+    // runs inside the stepper ISR (and from mc_reset() in the USART ISR); on this port all
+    // interrupts share one priority, so blocking here would stall serial reception. Instead the
+    // disable is deferred to st_idle_lock_tick() (SysTick), and st_wake_up() cancels it.
+    if (settings.stepper_idle_lock_time == 0) {
+      st_set_drivers_enabled(false);
+    } else {
+      st_disable_countdown_ms = settings.stepper_idle_lock_time; // Drivers stay as they are until then.
+    }
+  } else {
+    st_set_drivers_enabled(true); // Keep enabled.
   }
+}
 
-  if (bit_istrue(settings.flags, BITFLAG_INVERT_ST_ENABLE)) {
-    pin_state = !pin_state; // Apply pin invert.
+
+// Called every millisecond from SysTick_Handler. Performs st_go_idle()'s deferred driver disable.
+void st_idle_lock_tick()
+{
+  if (st_disable_countdown_ms) {
+    if (--st_disable_countdown_ms == 0) {
+      st_set_drivers_enabled(false);
+    }
   }
-
-  for (uint32_t idx = 0; idx < N_AXIS; idx++) {
-    LL_GPIO_WriteOutputPin(steppers[idx].enable.port, steppers[idx].enable.pin, pin_state);
-  }
-
 }
 
 
